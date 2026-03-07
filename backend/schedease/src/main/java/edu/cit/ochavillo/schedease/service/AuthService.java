@@ -1,5 +1,7 @@
 package edu.cit.ochavillo.schedease.service;
 
+import edu.cit.ochavillo.schedease.dto.LoginRequest;
+import edu.cit.ochavillo.schedease.dto.LoginResponse;
 import edu.cit.ochavillo.schedease.entity.VerificationToken;
 import edu.cit.ochavillo.schedease.repository.VerificationTokenRepository;
 import edu.cit.ochavillo.schedease.security.JwtUtil;
