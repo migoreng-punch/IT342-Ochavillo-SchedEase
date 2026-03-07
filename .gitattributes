@@ -1,0 +1,4 @@
+# Specific Backend (Spring Boot) files
+# Using ** matches the file even if it's nested inside a folder
+**/mvnw           text eol=lf
+**/*.cmd         text eol=crlf

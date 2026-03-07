@@ -1,0 +1,34 @@
+# ===============================
+# Spring Boot / Java
+# ===============================
+**/target/
+**/*.class
+**/.mvn/
+
+# ===============================
+# React / Node
+# ===============================
+web/node_modules/
+web/dist/
+web/.vite/
+web/.env
+
+###################################
+# Android
+###################################
+**/.gradle/
+**/local.properties
+**/.idea/
+**/build/
+**/app/build/
+**/*.iml
+**/.cxx/
+**/captures/
+**/.externalNativeBuild/
+
+# ===============================
+# IDEs / OS
+# ===============================
+.vscode/
+.idea/
+.DS_Store
