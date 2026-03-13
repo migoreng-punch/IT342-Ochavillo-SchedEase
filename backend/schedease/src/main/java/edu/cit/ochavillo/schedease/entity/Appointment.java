@@ -17,7 +17,16 @@ import java.util.UUID;
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "appointments")
+@Table(
+        name = "appointments",
+        uniqueConstraints = @UniqueConstraint(
+                columnNames = {
+                        "establishment_id",
+                        "appointment_date",
+                        "start_time"
+                }
+        )
+)
 public class Appointment {
 
     @Id

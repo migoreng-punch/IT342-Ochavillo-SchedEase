@@ -8,6 +8,7 @@ import edu.cit.ochavillo.schedease.enums.AppointmentStatus;
 import edu.cit.ochavillo.schedease.repository.AppointmentRepository;
 import edu.cit.ochavillo.schedease.repository.WeeklyAvailabilityRepository;
 import jakarta.transaction.Transactional;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
 import java.time.DayOfWeek;
@@ -67,7 +68,11 @@ public class AppointmentService {
         appointment.setEndTime(end);
         appointment.setStatus(AppointmentStatus.PENDING);
 
-        appointmentRepository.save(appointment);
+        try {
+            appointmentRepository.save(appointment);
+        } catch (DataIntegrityViolationException e) {
+            throw new RuntimeException("This time slot has already been booked.");
+        }
     }
 
     private void validateWeeklyAvailability(Establishment establishment,
