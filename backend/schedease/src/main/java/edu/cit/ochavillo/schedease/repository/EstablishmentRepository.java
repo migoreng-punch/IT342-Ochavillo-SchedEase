@@ -4,6 +4,7 @@ import edu.cit.ochavillo.schedease.entity.Establishment;
 import edu.cit.ochavillo.schedease.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface EstablishmentRepository extends JpaRepository<Establishment, Long> {
@@ -12,4 +13,5 @@ public interface EstablishmentRepository extends JpaRepository<Establishment, Lo
     Optional<Establishment> findByOwner(User owner);
     boolean existsByName(String name);
     boolean existsByContactEmail(String email);
+    List<Establishment> findByNameContainingIgnoreCase(String name);
 }
