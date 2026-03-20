@@ -97,7 +97,7 @@ public class AvailabilityService {
 
         List<Appointment> existingAppointments =
                 appointmentRepository
-                        .findByEstablishsmentAndAppointmentDateAndStatusIn(
+                        .findByEstablishmentAndAppointmentDateAndStatusIn(
                                 establishment,
                                 date,
                                 List.of(AppointmentStatus.PENDING, AppointmentStatus.CONFIRMED)

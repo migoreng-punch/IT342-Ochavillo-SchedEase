@@ -14,7 +14,7 @@ public interface AppointmentRepository
         extends JpaRepository<Appointment, UUID> {
 
     List<Appointment>
-    findByProviderAndAppointmentDate(User provider, LocalDate date);
+    findByEstablishmentAndAppointmentDate(Establishment establishment, LocalDate date);
 
     List<Appointment>
     findByClient(User client);
@@ -22,7 +22,7 @@ public interface AppointmentRepository
     List<Appointment>
     findByEstablishment(Establishment establishment);
 
-    List<Appointment> findByEstablishsmentAndAppointmentDateAndStatusIn(
+    List<Appointment> findByEstablishmentAndAppointmentDateAndStatusIn(
             Establishment establishment,
             LocalDate date,
             List<AppointmentStatus> statuses
