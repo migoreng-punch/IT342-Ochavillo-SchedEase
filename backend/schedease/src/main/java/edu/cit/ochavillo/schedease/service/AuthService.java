@@ -3,12 +3,14 @@ package edu.cit.ochavillo.schedease.service;
 import edu.cit.ochavillo.schedease.dto.LoginRequest;
 import edu.cit.ochavillo.schedease.dto.LoginResponse;
 import edu.cit.ochavillo.schedease.entity.VerificationToken;
+import edu.cit.ochavillo.schedease.enums.UserRoles;
 import edu.cit.ochavillo.schedease.repository.VerificationTokenRepository;
 import edu.cit.ochavillo.schedease.security.JwtUtil;
 import edu.cit.ochavillo.schedease.dto.RegisterRequest;
 import edu.cit.ochavillo.schedease.entity.User;
 import edu.cit.ochavillo.schedease.repository.UserRepository;
 
+import edu.cit.ochavillo.schedease.util.AppException;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -46,11 +48,11 @@ public class AuthService {
     public void register(RegisterRequest request) {
 
         if (userRepository.existsByUsername(request.getUsername())) {
-            throw new RuntimeException("Username already exists");
+            throw new AppException("AUTH-004", "Username already exists");
         }
 
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("Email already exists");
+            throw new AppException("AUTH-004", "Username already exists");
         }
 
         User user = new User();
@@ -59,7 +61,7 @@ public class AuthService {
         user.setLastName(request.getLastName());
         user.setEmail(request.getEmail());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
-        user.setRole("USER");
+        user.setRole(UserRoles.USER);
         user.setEnabled(false);
 
         userRepository.save(user);
@@ -80,14 +82,14 @@ public class AuthService {
     public LoginResponse login(LoginRequest request, String ip, String userAgent) {
 
         User user = userRepository.findByUsername(request.getUsername())
-                .orElseThrow(() -> new RuntimeException("Invalid username or password"));
+                .orElseThrow(() -> new AppException("AUTH-001", "Invalid username or password"));
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw new RuntimeException("Invalid username or password");
+            throw new AppException("AUTH-001", "Invalid username or password");
         }
 
         if (!user.isEnabled()) {
-            throw new RuntimeException("Email not verified. Please verify your email.");
+            throw new AppException("USER-003", "Email not verified. Please verify your email.");
         }
 
         String accessToken = jwtUtil.generateAccessToken(user.getUsername());
@@ -113,7 +115,7 @@ public class AuthService {
 
     public void logoutAll(String username) {
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new AppException("USER-001", "User not found"));
 
         refreshTokenService.revokeAll(user);
     }
@@ -127,10 +129,10 @@ public class AuthService {
 
         VerificationToken vt = verificationTokenRepository
                 .findByToken(token)
-                .orElseThrow(() -> new RuntimeException("Invalid verification token"));
+                .orElseThrow(() -> new AppException("VERIFY-001", "Invalid verification token"));
 
         if (vt.getExpiryDate().isBefore(Instant.now())) {
-            throw new RuntimeException("Verification token expired");
+            throw new AppException("VERIFY-002", "Verification token expired");
         }
 
         User user = vt.getUser();
@@ -143,10 +145,10 @@ public class AuthService {
     public void resendVerification(String email) {
 
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new AppException("USER-001", "User not found"));
 
         if (user.isEnabled()) {
-            throw new RuntimeException("Account already verified");
+            throw new AppException("VERIFY-005", "Account already verified");
         }
 
         // 🔒 Rate limit (60 seconds)
@@ -154,8 +156,8 @@ public class AuthService {
                 user.getLastVerificationSentAt()
                         .isAfter(Instant.now().minusSeconds(60))) {
 
-            throw new RuntimeException(
-                    "Please wait before requesting another verification email."
+            throw new AppException(
+                    "VERIFY-004", "Please wait before requesting another verification email."
             );
         }
 

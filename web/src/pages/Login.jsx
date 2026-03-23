@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useAuth } from "../auth/AuthContext"; // 1. Import your custom hook (adjust path if needed)
 
 const schema = z.object({
   username: z.string().min(3, "Username is required"),
@@ -13,6 +14,8 @@ export default function Login() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [serverError, setServerError] = useState(null);
+  
+  const { login } = useAuth(); // 2. Grab the login function from context
 
   const {
     register,
@@ -27,29 +30,15 @@ export default function Login() {
     setServerError(null);
 
     try {
-      const response = await fetch(
-        "http://localhost:8080/api/auth/login",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include", // required for refresh cookie
-          body: JSON.stringify(data),
-        }
-      );
+      // 3. Just pass the data to your context! 
+      // It handles the API call and sets the token in memory safely.
+      await login(data); 
 
-      if (!response.ok) {
-        const text = await response.text();
-        throw new Error(text);
-      }
-
-      const result = await response.json();
-
-      // Save access token (temporary solution)
-      localStorage.setItem("accessToken", result.accessToken);
-
+      // If it succeeds, redirect to dashboard
       navigate("/dashboard");
 
     } catch (err) {
+      // If your axios instance throws an error, it gets caught here
       setServerError("Invalid username or password");
     } finally {
       setLoading(false);
@@ -72,7 +61,7 @@ export default function Login() {
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
 
           {serverError && (
-            <div className="text-red-500 text-sm">{serverError}</div>
+            <div className="text-red-500 text-sm bg-red-50 p-3 rounded-lg">{serverError}</div>
           )}
 
           <InputField
