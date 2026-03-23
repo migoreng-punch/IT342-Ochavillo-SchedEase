@@ -3,6 +3,7 @@ package edu.cit.ochavillo.schedease.service;
 import edu.cit.ochavillo.schedease.entity.RefreshToken;
 import edu.cit.ochavillo.schedease.entity.User;
 import edu.cit.ochavillo.schedease.repository.RefreshTokenRepository;
+import edu.cit.ochavillo.schedease.util.AppException;
 import jakarta.transaction.Transactional;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.stereotype.Service;
@@ -39,10 +40,10 @@ public class RefreshTokenService {
         String hash = hash(rawToken);
 
         RefreshToken rt = repository.findByTokenHashAndRevokedFalse(hash)
-                .orElseThrow(() -> new RuntimeException("Invalid refresh token"));
+                .orElseThrow(() -> new AppException("AUTH-003", "Invalid refresh token"));
 
         if (rt.getExpiresAt().isBefore(Instant.now())) {
-            throw new RuntimeException("Refresh token expired");
+            throw new AppException("AUTH-002", "Refresh token expired");
         }
 
         return rt.getUser();
@@ -75,16 +76,16 @@ public class RefreshTokenService {
         String hash = hash(rawToken);
 
         RefreshToken existing = repository.findByTokenHashAndRevokedFalse(hash)
-                .orElseThrow(() -> new RuntimeException("Invalid refresh token"));
+                .orElseThrow(() -> new AppException("AUTH-003", "refresh token"));
 
         if (existing.getExpiresAt().isBefore(Instant.now())) {
-            throw new RuntimeException("Refresh token expired");
+            throw new AppException("AUTH-002", "Refresh token expired");
         }
 
         // 🚨 Reuse detection
         // Can remove
         if (existing.isRevoked()) {
-            throw new RuntimeException("Refresh token reuse detected");
+            throw new AppException("AUTH-006", "Refresh token reuse detected");
         }
 
         // 🔄 Revoke old token

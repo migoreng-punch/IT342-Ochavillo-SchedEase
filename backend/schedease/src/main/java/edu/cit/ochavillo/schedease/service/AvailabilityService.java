@@ -7,6 +7,7 @@ import edu.cit.ochavillo.schedease.entity.WeeklyAvailability;
 import edu.cit.ochavillo.schedease.enums.AppointmentStatus;
 import edu.cit.ochavillo.schedease.repository.AppointmentRepository;
 import edu.cit.ochavillo.schedease.repository.WeeklyAvailabilityRepository;
+import edu.cit.ochavillo.schedease.util.AppException;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
@@ -40,15 +41,15 @@ public class AvailabilityService {
                                          LocalTime end) {
 
         if (!provider.getRole().equals("PROVIDER")) {
-            throw new RuntimeException("Only providers can set availability.");
+            throw new AppException("AUTH-005", "Only providers can set availability.");
         }
 
         if (!establishment.getOwner().getId().equals(provider.getId())) {
-            throw new RuntimeException("Unauthorized to modify this establishment.");
+            throw new AppException("AUTH-005", "Unauthorized to modify this establishment.");
         }
 
         if (!start.isBefore(end)) {
-            throw new RuntimeException("Start time must be before end time.");
+            throw new AppException("AVAIL-004", "Start time must be before end time.");
         }
 
         validateNoOverlap(establishment, day, start, end);
@@ -76,14 +77,14 @@ public class AvailabilityService {
         );
 
         if (overlaps) {
-            throw new RuntimeException("Availability overlaps existing schedule.");
+            throw new AppException("AVAIL-002", "Availability overlaps existing schedule.");
         }
     }
 
     public List<LocalTime> generateAvailableSlots(Establishment establishment, LocalDate date) {
 
         if (establishment.getSlotDurationMinutes() == null) {
-            throw new RuntimeException("Establishment slot duration not configured.");
+            throw new AppException("AVAIL-003", "Establishment slot duration not configured.");
         }
 
         DayOfWeek day = date.getDayOfWeek();

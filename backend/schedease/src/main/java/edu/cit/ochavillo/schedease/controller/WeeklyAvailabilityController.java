@@ -6,6 +6,7 @@ import edu.cit.ochavillo.schedease.entity.User;
 import edu.cit.ochavillo.schedease.repository.EstablishmentRepository;
 import edu.cit.ochavillo.schedease.repository.UserRepository;
 import edu.cit.ochavillo.schedease.service.AvailabilityService;
+import edu.cit.ochavillo.schedease.util.AppException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -36,11 +37,11 @@ public class WeeklyAvailabilityController {
             @RequestBody CreateWeeklyAvailabilityRequest request) {
 
         User provider = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new AppException("USER-001", "User not found"));
 
         Establishment establishment = establishmentRepository
                 .findByOwner(provider)
-                .orElseThrow(() -> new RuntimeException("Establishment not found"));
+                .orElseThrow(() -> new AppException("ESTAB-001", "Establishment not found"));
 
         availabilityService.createWeeklyAvailability(
                 provider,

@@ -7,6 +7,7 @@ import edu.cit.ochavillo.schedease.entity.WeeklyAvailability;
 import edu.cit.ochavillo.schedease.enums.AppointmentStatus;
 import edu.cit.ochavillo.schedease.repository.AppointmentRepository;
 import edu.cit.ochavillo.schedease.repository.WeeklyAvailabilityRepository;
+import edu.cit.ochavillo.schedease.util.AppException;
 import jakarta.transaction.Transactional;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -53,11 +54,11 @@ public class AppointmentService {
         LocalTime nowTime = LocalTime.now();
 
         if (date.isBefore(today)) {
-            throw new RuntimeException("Cannot book an appointment in the past.");
+            throw new AppException("APPT-006", "Cannot book an appointment in the past.");
         }
 
         if (date.isEqual(today) && start.isBefore(nowTime)) {
-            throw new RuntimeException("Cannot book a past time slot.");
+            throw new AppException("APPT-006", "Cannot book a past time slot.");
         }
 
         Appointment appointment = new Appointment();
@@ -71,7 +72,7 @@ public class AppointmentService {
         try {
             appointmentRepository.save(appointment);
         } catch (DataIntegrityViolationException e) {
-            throw new RuntimeException("This time slot has already been booked.");
+            throw new AppException("APPT-009", "This time slot has already been booked.");
         }
     }
 
@@ -103,7 +104,7 @@ public class AppointmentService {
         }
 
         Appointment appointment = appointmentRepository.findById(appointmentId)
-                .orElseThrow(() -> new RuntimeException("Appointment not found."));
+                .orElseThrow(() -> new AppException("APPT-001", "Appointment not found."));
 
         if (!appointment.getEstablishment().getOwner().getId().equals(provider.getId())) {
             throw new RuntimeException("Unauthorized to confirm this appointment.");
@@ -120,7 +121,7 @@ public class AppointmentService {
     public void cancelAppointment(UUID appointmentId, User requester) {
 
         Appointment appointment = appointmentRepository.findById(appointmentId)
-                .orElseThrow(() -> new RuntimeException("Appointment not found."));
+                .orElseThrow(() -> new AppException("APPT-001", "Appointment not found."));
 
         boolean isClient =
                 appointment.getClient().getId().equals(requester.getId());
@@ -136,7 +137,7 @@ public class AppointmentService {
         }
 
         if (appointment.getStatus() == AppointmentStatus.CANCELLED) {
-            throw new RuntimeException("Appointment already cancelled.");
+            throw new AppException("APPT-002", "Appointment already cancelled.");
         }
 
         appointment.setStatus(AppointmentStatus.CANCELLED);

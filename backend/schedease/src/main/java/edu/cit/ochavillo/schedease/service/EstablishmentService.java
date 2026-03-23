@@ -4,7 +4,9 @@ import edu.cit.ochavillo.schedease.dto.CreateEstablishmentRequest;
 import edu.cit.ochavillo.schedease.dto.UpdateEstablishmentRequest;
 import edu.cit.ochavillo.schedease.entity.Establishment;
 import edu.cit.ochavillo.schedease.entity.User;
+import edu.cit.ochavillo.schedease.enums.UserRoles;
 import edu.cit.ochavillo.schedease.repository.EstablishmentRepository;
+import edu.cit.ochavillo.schedease.util.AppException;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
@@ -34,7 +36,7 @@ public class EstablishmentService {
     public Establishment getEstablishmentById(Long id) {
 
         return establishmentRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Establishment not found"));
+                .orElseThrow(() -> new AppException("ESTAB-001", "Establishment not found"));
     }
 
     // Create establishment
@@ -42,8 +44,8 @@ public class EstablishmentService {
     public Establishment createEstablishment(User provider,
                                              CreateEstablishmentRequest request) {
 
-        if (!provider.getRole().equals("PROVIDER")) {
-            throw new RuntimeException("Only providers can create establishments.");
+        if (!provider.getRole().equals(UserRoles.PROVIDER)) {
+            throw new AppException("AUTH-005", "Only providers can create establishments.");
         }
 
         Establishment establishment = new Establishment();
@@ -63,10 +65,10 @@ public class EstablishmentService {
                                     UpdateEstablishmentRequest request) {
 
         Establishment establishment = establishmentRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Establishment not found"));
+                .orElseThrow(() -> new AppException("ESTAB-001", "Establishment not found"));
 
         if (!establishment.getOwner().getId().equals(provider.getId())) {
-            throw new RuntimeException("Unauthorized to update this establishment.");
+            throw new AppException("AUTH-005", "Unauthorized to update this establishment.");
         }
 
         establishment.setName(request.name());

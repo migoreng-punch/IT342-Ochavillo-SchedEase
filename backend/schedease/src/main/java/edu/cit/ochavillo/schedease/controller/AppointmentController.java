@@ -6,6 +6,7 @@ import edu.cit.ochavillo.schedease.entity.User;
 import edu.cit.ochavillo.schedease.repository.EstablishmentRepository;
 import edu.cit.ochavillo.schedease.repository.UserRepository;
 import edu.cit.ochavillo.schedease.service.AppointmentService;
+import edu.cit.ochavillo.schedease.util.AppException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -34,10 +35,10 @@ public class AppointmentController {
             @RequestBody BookAppointmentRequest request) {
 
         User client = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new AppException("USER-001", "User not found"));
 
         Establishment establishment = establishmentRepository.findById(request.establishmentId())
-                .orElseThrow(() -> new RuntimeException("Establishment not found"));
+                .orElseThrow(() -> new AppException("ESTAB-001", "Establishment not found"));
 
         appointmentService.bookAppointment(
                 client,
@@ -56,7 +57,7 @@ public class AppointmentController {
             @AuthenticationPrincipal String username) {
 
         User provider = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new AppException("USER-001", "User not found"));
 
         appointmentService.confirmAppointment(id, provider);
 
@@ -70,7 +71,7 @@ public class AppointmentController {
             @AuthenticationPrincipal String username) {
 
         User requester = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new AppException("USER-001", "User not found"));
 
         appointmentService.cancelAppointment(id, requester);
 
@@ -83,7 +84,7 @@ public class AppointmentController {
             @AuthenticationPrincipal(expression = "username") String username) {
 
         User client = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new AppException("USER-001", "User not found"));
 
         return ResponseEntity.ok(
                 appointmentService.getAppointmentsForClient(client)
@@ -96,15 +97,15 @@ public class AppointmentController {
             @AuthenticationPrincipal(expression = "username") String username) {
 
         User provider = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new AppException("USER-001", "User not found"));
 
         if (!provider.getRole().equals("PROVIDER")) {
-            throw new RuntimeException("Only providers can access this endpoint.");
+            throw new AppException("AUTH-005", "Only providers can access this endpoint.");
         }
 
         Establishment establishment = establishmentRepository
                 .findByOwner(provider)
-                .orElseThrow(() -> new RuntimeException("Establishment not found"));
+                .orElseThrow(() -> new AppException("ESTAB-001", "Establishment not found"));
 
         return ResponseEntity.ok(
                 appointmentService.getAppointmentsForEstablishment(establishment)

@@ -9,6 +9,7 @@ import edu.cit.ochavillo.schedease.repository.UserRepository;
 import edu.cit.ochavillo.schedease.service.AvailabilityService;
 import edu.cit.ochavillo.schedease.service.EstablishmentService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
