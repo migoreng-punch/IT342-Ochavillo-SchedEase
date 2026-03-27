@@ -9,6 +9,7 @@ import lombok.Setter;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.UUID;
 
@@ -56,4 +57,10 @@ public class Appointment {
 
     @Column(nullable = false)
     private Instant createdAt = Instant.now();
+
+    @Column(name = "reschdule_count")
+    private int rescheduleCount = 0;
+
+    @Column(name = "last_rescheduled_at")
+    private LocalDateTime lastRescheduledAt;
 }

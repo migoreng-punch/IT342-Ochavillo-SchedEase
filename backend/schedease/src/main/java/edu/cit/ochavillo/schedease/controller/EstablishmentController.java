@@ -1,15 +1,16 @@
 package edu.cit.ochavillo.schedease.controller;
 
-import edu.cit.ochavillo.schedease.dto.CreateEstablishmentRequest;
-import edu.cit.ochavillo.schedease.dto.UpdateEstablishmentRequest;
+import edu.cit.ochavillo.schedease.dto.*;
 import edu.cit.ochavillo.schedease.entity.Establishment;
 import edu.cit.ochavillo.schedease.entity.User;
+import edu.cit.ochavillo.schedease.enums.UserRoles;
 import edu.cit.ochavillo.schedease.repository.EstablishmentRepository;
 import edu.cit.ochavillo.schedease.repository.UserRepository;
 import edu.cit.ochavillo.schedease.service.AvailabilityService;
 import edu.cit.ochavillo.schedease.service.EstablishmentService;
+import edu.cit.ochavillo.schedease.util.AppException;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -41,7 +42,7 @@ public class EstablishmentController {
             @RequestParam LocalDate date) {
 
         Establishment establishment = establishmentRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Establishment not found"));
+                .orElseThrow(() -> new AppException("ESTAB-001", "Establishment not found"));
 
         return ResponseEntity.ok(
                 availabilityService.generateAvailableSlots(establishment, date)
@@ -68,30 +69,44 @@ public class EstablishmentController {
 
     // 🏢 Create Establishment (Provider)
     @PostMapping
-    public ResponseEntity<?> createEstablishment(
-            @AuthenticationPrincipal String username,
+    public ResponseEntity<EstablishmentResponse> createEstablishment(
+            @AuthenticationPrincipal User provider,
             @RequestBody CreateEstablishmentRequest request) {
 
-        User provider = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        if((provider.getRole() != UserRoles.PROVIDER)){
+            throw new AppException("AUTH-005", "Only Providers can create Establishment");
+        }
 
-        return ResponseEntity.ok(
-                establishmentService.createEstablishment(provider, request)
+        EstablishmentDTO safeDto = establishmentService.createEstablishment(provider, request);
+
+        EstablishmentResponse responseBody = new EstablishmentResponse(
+                "Establishment created successfully!",
+                safeDto                     // Pass the DTO here, NOT the raw entity!
         );
+
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(responseBody);
     }
 
     // ✏️ Update Establishment
     @PutMapping("/{id}")
-    public ResponseEntity<?> updateEstablishment(
+    public ResponseEntity<EstablishmentResponse> updateEstablishment(
             @PathVariable Long id,
-            @AuthenticationPrincipal String username,
+            @AuthenticationPrincipal User provider,
             @RequestBody UpdateEstablishmentRequest request) {
 
-        User provider = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        if((provider.getRole() != UserRoles.PROVIDER)){
+            throw new AppException("AUTH-005", "Only Providers can create Establishment");
+        }
 
-        establishmentService.updateEstablishment(id, provider, request);
+        EstablishmentDTO updatedDTO = establishmentService.updateEstablishment(id, provider, request);
 
-        return ResponseEntity.ok("Establishment updated.");
+        EstablishmentResponse responseBody  = new EstablishmentResponse(
+                "Establishment Updated Successfully",
+                updatedDTO
+        );
+
+        return ResponseEntity.ok(responseBody);
     }
 }

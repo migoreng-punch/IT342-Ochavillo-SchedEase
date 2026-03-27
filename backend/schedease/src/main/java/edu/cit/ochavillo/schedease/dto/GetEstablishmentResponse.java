@@ -1,9 +1,11 @@
 package edu.cit.ochavillo.schedease.dto;
 
-public record CreateEstablishmentRequest(
+public record GetEstablishmentResponse(
+        Long id,
         String name,
         String description,
         String address,
         String contactEmail,
-        Integer slotDurationMinutes
-) {}
+        String providerName
+) {
+}

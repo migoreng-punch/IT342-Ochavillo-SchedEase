@@ -2,12 +2,15 @@ package edu.cit.ochavillo.schedease.security;
 
 import java.io.IOException;
 
+import edu.cit.ochavillo.schedease.util.ApiErrorResponse;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.http.MediaType;
 
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -36,7 +39,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             FilterChain filterChain)
             throws ServletException, IOException {
 
-        // OPTIONAL BUT RECOMMENDED: Fast-pass for OPTIONS preflight requests
+        // Fast-pass for OPTIONS preflight requests
         if (request.getMethod().equals("OPTIONS")) {
             filterChain.doFilter(request, response);
             return;
@@ -49,19 +52,28 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             token = authHeader.substring(7);
 
-            // 🚨 FIX: Wrap the parsing logic in a try-catch to prevent server crashes
             try {
                 username = jwtUtil.extractUsername(token);
+
             } catch (ExpiredJwtException e) {
-                // Token is expired. We catch the error so it doesn't crash the server.
                 System.out.println("JWT expired: " + e.getMessage());
+                // 🚨 1. Write the specific JSON error
+                sendSpecificError(response, "AUTH-002", "Your access token has expired.");
+                // 🚨 2. HALT THE CHAIN! Do not let the request continue.
+                return;
+
             } catch (JwtException e) {
-                // Catches manipulated or malformed tokens
                 System.out.println("Invalid JWT: " + e.getMessage());
+                sendSpecificError(response, "AUTH-005", "Invalid or malformed token.");
+                return;
+
+            } catch (Exception e) {
+                System.out.println("Token processing error: " + e.getMessage());
+                sendSpecificError(response, "AUTH-007", "An error occurred processing your token.");
+                return;
             }
         }
 
-        // If the token was expired, username will be null, and this block is safely skipped
         if (username != null &&
                 SecurityContextHolder.getContext().getAuthentication() == null) {
 
@@ -69,11 +81,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             if (user != null && jwtUtil.isTokenValid(token)) {
 
+                // 🚨 NOTE: Make sure you pass the FULL 'user' object here,
+                // not 'user.getUsername()', so your Controllers can access it!
                 UsernamePasswordAuthenticationToken authentication =
                         new UsernamePasswordAuthenticationToken(
-                                user.getUsername(),
+                                user,
                                 null,
-                                user.getAuthorities() // Note: Add roles/authorities here later if needed!
+                                user.getAuthorities()
                         );
 
                 System.out.println("🚨 SPRING SECURITY SEES THESE ROLES: " + authentication.getAuthorities());
@@ -87,7 +101,23 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
         }
 
-        // The request now cleanly proceeds down the chain!
+        // If the token was perfectly valid (or if no token was provided at all),
+        // the request cleanly proceeds down the chain.
         filterChain.doFilter(request, response);
+    }
+
+    // =====================================================================
+    // 🚨 THE HELPER METHOD: Converts your Java object to JSON on the fly
+    // =====================================================================
+    private void sendSpecificError(HttpServletResponse response, String code, String message) throws IOException {
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+
+        // Creates your standard Error structure
+        ApiErrorResponse errorResponse = new ApiErrorResponse(code, message);
+
+        // Translates the Java object into a JSON string and writes it to the HTTP response
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.writeValue(response.getOutputStream(), errorResponse);
     }
 }

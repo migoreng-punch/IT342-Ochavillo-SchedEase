@@ -1,10 +1,8 @@
 package edu.cit.ochavillo.schedease.service;
 
-import edu.cit.ochavillo.schedease.dto.CreateEstablishmentRequest;
-import edu.cit.ochavillo.schedease.dto.UpdateEstablishmentRequest;
+import edu.cit.ochavillo.schedease.dto.*;
 import edu.cit.ochavillo.schedease.entity.Establishment;
 import edu.cit.ochavillo.schedease.entity.User;
-import edu.cit.ochavillo.schedease.enums.UserRoles;
 import edu.cit.ochavillo.schedease.repository.EstablishmentRepository;
 import edu.cit.ochavillo.schedease.util.AppException;
 import jakarta.transaction.Transactional;
@@ -22,58 +20,82 @@ public class EstablishmentService {
     }
 
     // Browse establishments
-    public List<Establishment> getEstablishments(String search) {
+    public List<EstablishmentDTO> getEstablishments(String search) {
+
+        List<Establishment> establishments;
 
         if (search == null || search.isBlank()) {
-            return establishmentRepository.findAll();
+            establishments = establishmentRepository.findAll();
+        }else{
+            establishments = establishmentRepository
+                    .findByNameContainingIgnoreCase(search);
         }
 
-        return establishmentRepository
-                .findByNameContainingIgnoreCase(search);
+        return establishments.stream()
+                .map(this::convertToDTO)
+                .toList();
     }
 
     // Get single establishment
-    public Establishment getEstablishmentById(Long id) {
+    public EstablishmentDTO getEstablishmentById(Long id) {
 
-        return establishmentRepository.findById(id)
+        Establishment establishment = establishmentRepository.findById(id)
                 .orElseThrow(() -> new AppException("ESTAB-001", "Establishment not found"));
+
+        return convertToDTO(establishment);
     }
 
     // Create establishment
     @Transactional
-    public Establishment createEstablishment(User provider,
-                                             CreateEstablishmentRequest request) {
-
-        if (!provider.getRole().equals(UserRoles.PROVIDER)) {
-            throw new AppException("AUTH-005", "Only providers can create establishments.");
-        }
+    public EstablishmentDTO createEstablishment(User provider,
+                                                           CreateEstablishmentRequest request) {
 
         Establishment establishment = new Establishment();
         establishment.setName(request.name());
         establishment.setDescription(request.description());
         establishment.setAddress(request.address());
         establishment.setContactEmail(request.contactEmail());
+        establishment.setSlotDurationMinutes(request.slotDurationMinutes());
         establishment.setOwner(provider);
+        establishmentRepository.save(establishment);
 
-        return establishmentRepository.save(establishment);
+        return convertToDTO(establishment);
     }
 
     // Update establishment
     @Transactional
-    public void updateEstablishment(Long id,
+    public EstablishmentDTO updateEstablishment(Long id,
                                     User provider,
                                     UpdateEstablishmentRequest request) {
 
         Establishment establishment = establishmentRepository.findById(id)
                 .orElseThrow(() -> new AppException("ESTAB-001", "Establishment not found"));
 
-        if (!establishment.getOwner().getId().equals(provider.getId())) {
-            throw new AppException("AUTH-005", "Unauthorized to update this establishment.");
-        }
-
         establishment.setName(request.name());
         establishment.setDescription(request.description());
         establishment.setAddress(request.address());
         establishment.setContactEmail(request.contactEmail());
+        establishment.setSlotDurationMinutes(request.slotDurationMinutes());
+        establishment.setBufferMinutes(request.bufferMinutes());
+        establishment.setBookingCutoffHours(request.bookingCutoffHours());
+
+        establishmentRepository.save(establishment);
+
+        return convertToDTO(establishment);
+    }
+
+    private EstablishmentDTO convertToDTO(Establishment entity) {
+        return new EstablishmentDTO(
+                entity.getId(),
+                entity.getName(),
+                entity.getDescription(),
+                entity.getAddress(),
+                entity.getContactEmail(),
+                entity.getSlotDurationMinutes(),
+                entity.getBufferMinutes(),
+                entity.getBookingCutoffHours(),
+                entity.getOwner().getId(),
+                entity.getOwner().getFirstName()
+        );
     }
 }

@@ -37,7 +37,7 @@ public class Establishment {
     @Column(name = "contact_email", nullable = false)
     private String contactEmail;
 
-    @Column(name = "slot_duration_minutes")
+    @Column(name = "slot_duration_minutes", nullable = false)
     private Integer slotDurationMinutes;
 
     @Column(name = "buffer_mintues")
