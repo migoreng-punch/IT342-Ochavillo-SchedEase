@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.UUID;
@@ -141,6 +142,124 @@ public class AppointmentService {
         }
 
         appointment.setStatus(AppointmentStatus.CANCELLED);
+    }
+
+    @Transactional
+    public void rescheduleAppointment(UUID appointmentId,
+                                      User requester,
+                                      LocalDate newDate,
+                                      LocalTime newStart) {
+
+        Appointment appointment = appointmentRepository.findById(appointmentId)
+                .orElseThrow(() -> new RuntimeException("Appointment not found."));
+
+        boolean isClient =
+                appointment.getClient().getId().equals(requester.getId());
+
+        boolean isProvider =
+                appointment.getEstablishment()
+                        .getOwner()
+                        .getId()
+                        .equals(requester.getId());
+
+        if (!isClient && !isProvider) {
+            throw new RuntimeException("Unauthorized to reschedule this appointment.");
+        }
+
+        // ❌ Status restrictions
+        if (appointment.getStatus() == AppointmentStatus.COMPLETED) {
+            throw new RuntimeException("Completed appointments cannot be rescheduled.");
+        }
+
+        if (appointment.getStatus() == AppointmentStatus.CANCELLED) {
+            throw new RuntimeException("Cancelled appointments cannot be rescheduled.");
+        }
+
+        // ===============================
+        // 🔒 CLIENT RESCHEDULING POLICY
+        // ===============================
+        if (isClient) {
+
+            // ✅ Max reschedule limit
+            int maxReschedules = 3;
+
+            if (appointment.getRescheduleCount() >= maxReschedules) {
+                throw new RuntimeException("Reschedule limit reached.");
+            }
+
+            // ✅ Cooldown (optional but recommended)
+            if (appointment.getLastRescheduledAt() != null) {
+
+                if (appointment.getLastRescheduledAt()
+                        .isAfter(LocalDateTime.now().minusMinutes(30))) {
+
+                    throw new RuntimeException(
+                            "You can only reschedule once every 30 minutes."
+                    );
+                }
+            }
+        }
+
+        Establishment establishment = appointment.getEstablishment();
+
+        int duration = establishment.getSlotDurationMinutes();
+        LocalTime newEnd = newStart.plusMinutes(duration);
+
+        LocalDate today = LocalDate.now();
+        LocalTime nowTime = LocalTime.now();
+
+        // ❌ Past date/time validation
+        if (newDate.isBefore(today)) {
+            throw new RuntimeException("Cannot reschedule to a past date.");
+        }
+
+        if (newDate.isEqual(today) && newStart.isBefore(nowTime)) {
+            throw new RuntimeException("Cannot reschedule to a past time.");
+        }
+
+        // ⛔ Booking cutoff enforcement
+        Integer cutoffHours = establishment.getBookingCutoffHours();
+
+        if (cutoffHours != null) {
+
+            LocalDateTime now = LocalDateTime.now();
+            LocalDateTime newDateTime = LocalDateTime.of(newDate, newStart);
+
+            if (newDateTime.isBefore(now.plusHours(cutoffHours))) {
+                throw new RuntimeException(
+                        "Rescheduling is not allowed within " + cutoffHours + " hours of the appointment."
+                );
+            }
+        }
+
+        // ✅ Weekly availability validation
+        validateWeeklyAvailability(establishment, newDate, newStart, newEnd);
+
+        // ✅ Slot availability validation
+        List<LocalTime> availableSlots =
+                availabilityService.generateAvailableSlots(establishment, newDate);
+
+        if (!availableSlots.contains(newStart)) {
+            throw new RuntimeException("Selected slot is not available.");
+        }
+
+        // 🔄 Apply changes
+        appointment.setAppointmentDate(newDate);
+        appointment.setStartTime(newStart);
+        appointment.setEndTime(newEnd);
+
+        // 🔁 Reset status
+        appointment.setStatus(AppointmentStatus.PENDING);
+
+        // ===============================
+        // 🔁 UPDATE RESCHEDULE TRACKING
+        // ===============================
+        if (isClient) {
+            appointment.setRescheduleCount(
+                    appointment.getRescheduleCount() + 1
+            );
+            appointment.setLastRescheduledAt(LocalDateTime.now());
+        }
     }
 
     public List<Appointment> getAppointmentsForClient(User client) {

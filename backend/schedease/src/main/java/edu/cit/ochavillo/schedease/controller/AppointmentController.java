@@ -1,6 +1,7 @@
 package edu.cit.ochavillo.schedease.controller;
 
 import edu.cit.ochavillo.schedease.dto.BookAppointmentRequest;
+import edu.cit.ochavillo.schedease.dto.RescheduleRequest;
 import edu.cit.ochavillo.schedease.entity.Establishment;
 import edu.cit.ochavillo.schedease.entity.User;
 import edu.cit.ochavillo.schedease.repository.EstablishmentRepository;
@@ -110,5 +111,24 @@ public class AppointmentController {
         return ResponseEntity.ok(
                 appointmentService.getAppointmentsForEstablishment(establishment)
         );
+    }
+
+    @PutMapping("/{id}/reschedule")
+    public ResponseEntity<?> rescheduleAppointment(
+            @PathVariable UUID id,
+            @AuthenticationPrincipal String username,
+            @RequestBody RescheduleRequest request) {
+
+        User requester = userRepository.findByUsername(username)
+                .orElseThrow(() -> new AppException("USER-001", "User not found"));
+
+        appointmentService.rescheduleAppointment(
+                id,
+                requester,
+                request.date(),
+                request.startTime()
+        );
+
+        return ResponseEntity.ok("Appointment rescheduled. Awaiting confirmation.");
     }
 }
