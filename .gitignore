@@ -13,22 +13,47 @@ web/dist/
 web/.vite/
 web/.env
 
-###################################
-# Android
-###################################
-**/.gradle/
-**/local.properties
-**/.idea/
-**/build/
-**/app/build/
-**/*.iml
-**/.cxx/
-**/captures/
-**/.externalNativeBuild/
-
 # ===============================
 # IDEs / OS
 # ===============================
 .vscode/
 .idea/
 .DS_Store
+
+# Gradle files
+.gradle/
+build/
+*/build/
+
+# Local configuration file (contains your specific computer's Android SDK path)
+local.properties
+
+# Android Studio / IntelliJ IDE files
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Build-generated files (Compiled code, caches, etc.)
+*.apk
+*.aab
+*.ap_
+*.aar
+*.dex
+*.class
+bin/
+gen/
+out/
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Keystores and signing files (NEVER commit these when you eventually make them!)
+*.jks
+*.keystore
+keystore.properties
+
+# Google Services (if you add Firebase later)
+google-services.json
+GoogleService-Info.plist
