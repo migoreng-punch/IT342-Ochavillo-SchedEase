@@ -6,8 +6,10 @@ import edu.cit.ochavillo.schedease.entity.User;
 import edu.cit.ochavillo.schedease.repository.EstablishmentRepository;
 import edu.cit.ochavillo.schedease.util.AppException;
 import jakarta.transaction.Transactional;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
+import org.springframework.data.domain.Pageable;
 import java.util.List;
 
 @Service
@@ -20,20 +22,39 @@ public class EstablishmentService {
     }
 
     // Browse establishments
-    public List<EstablishmentDTO> getEstablishments(String search) {
+    public CursorResponse<EstablishmentDTO> getEstablishments(String search, Long cursor, int limit) {
+
+        // 1. If cursor is null (first page), start at ID 0.
+        Long actualCursor = (cursor != null) ? cursor : 0L;
+
+        // 2. Set the SQL Limit (We always ask for "page 0" relative to our cursor)
+        Pageable pageable = PageRequest.of(0, limit);
 
         List<Establishment> establishments;
 
+        // 3. Execute the correct query
         if (search == null || search.isBlank()) {
-            establishments = establishmentRepository.findAll();
-        }else{
             establishments = establishmentRepository
-                    .findByNameContainingIgnoreCase(search);
+                    .findByIdGreaterThanOrderByIdAsc(actualCursor, pageable);
+        } else {
+            establishments = establishmentRepository
+                    .findByNameContainingIgnoreCaseAndIdGreaterThanOrderByIdAsc(search, actualCursor, pageable);
         }
 
-        return establishments.stream()
-                .map(this::convertToDTO)
+        // 4. Convert to DTOs
+        List<EstablishmentDTO> dtos = establishments.stream()
+                .map(this::convertToDTO) // Or EstablishmentDTO::fromEntity
                 .toList();
+
+        // 5. Calculate pagination metadata
+        // The next cursor is simply the ID of the last item in this list
+        Long nextCursor = dtos.isEmpty() ? null : dtos.get(dtos.size() - 1).id();
+
+        // If we asked for 10 items and got 10, there are probably more!
+        boolean hasMore = dtos.size() == limit;
+
+        // 6. Return the packaged response
+        return new CursorResponse<>(dtos, nextCursor, hasMore);
     }
 
     // Get single establishment

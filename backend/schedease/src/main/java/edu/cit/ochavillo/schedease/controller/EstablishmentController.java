@@ -49,18 +49,21 @@ public class EstablishmentController {
         );
     }
 
+    // 🔎 Browse & Search Establishments (Now with Cursor Pagination!)
     @GetMapping
-    public ResponseEntity<?> getAllEstablishments(
-            @RequestParam(required = false) String search) {
+    public ResponseEntity<CursorResponse<EstablishmentDTO>> getAllEstablishments(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) Long cursor,
+            @RequestParam(defaultValue = "10") int limit) { // Default to 10 items if mobile forgets to ask
 
         return ResponseEntity.ok(
-                establishmentService.getEstablishments(search)
+                establishmentService.getEstablishments(search, cursor, limit)
         );
     }
 
-    // 🔎 Get Establishment Details
+    // 🔎 Get Single Establishment Details
     @GetMapping("/{id}")
-    public ResponseEntity<?> getEstablishment(@PathVariable Long id) {
+    public ResponseEntity<EstablishmentDTO> getEstablishment(@PathVariable Long id) {
 
         return ResponseEntity.ok(
                 establishmentService.getEstablishmentById(id)
