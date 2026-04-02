@@ -71,6 +71,10 @@ public class EstablishmentService {
         Establishment establishment = establishmentRepository.findById(id)
                 .orElseThrow(() -> new AppException("ESTAB-001", "Establishment not found"));
 
+        if (!establishment.getOwner().getId().equals(provider.getId())) {
+            throw new AppException("AUTH-005", "You do not have permission to edit this establishment.");
+        }
+
         establishment.setName(request.name());
         establishment.setDescription(request.description());
         establishment.setAddress(request.address());

@@ -77,11 +77,11 @@ public class EstablishmentController {
             throw new AppException("AUTH-005", "Only Providers can create Establishment");
         }
 
-        EstablishmentDTO safeDto = establishmentService.createEstablishment(provider, request);
+        EstablishmentDTO establishmentDto = establishmentService.createEstablishment(provider, request);
 
         EstablishmentResponse responseBody = new EstablishmentResponse(
                 "Establishment created successfully!",
-                safeDto                     // Pass the DTO here, NOT the raw entity!
+                establishmentDto
         );
 
         return ResponseEntity
@@ -100,11 +100,11 @@ public class EstablishmentController {
             throw new AppException("AUTH-005", "Only Providers can create Establishment");
         }
 
-        EstablishmentDTO updatedDTO = establishmentService.updateEstablishment(id, provider, request);
+        EstablishmentDTO establishmentDto = establishmentService.updateEstablishment(id, provider, request);
 
         EstablishmentResponse responseBody  = new EstablishmentResponse(
                 "Establishment Updated Successfully",
-                updatedDTO
+                establishmentDto
         );
 
         return ResponseEntity.ok(responseBody);

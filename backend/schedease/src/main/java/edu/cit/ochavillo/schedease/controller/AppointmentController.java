@@ -1,13 +1,17 @@
 package edu.cit.ochavillo.schedease.controller;
 
+import edu.cit.ochavillo.schedease.dto.AppointmentDTO;
+import edu.cit.ochavillo.schedease.dto.AppointmentResponse;
 import edu.cit.ochavillo.schedease.dto.BookAppointmentRequest;
 import edu.cit.ochavillo.schedease.dto.RescheduleRequest;
 import edu.cit.ochavillo.schedease.entity.Establishment;
 import edu.cit.ochavillo.schedease.entity.User;
+import edu.cit.ochavillo.schedease.enums.UserRoles;
 import edu.cit.ochavillo.schedease.repository.EstablishmentRepository;
 import edu.cit.ochavillo.schedease.repository.UserRepository;
 import edu.cit.ochavillo.schedease.service.AppointmentService;
 import edu.cit.ochavillo.schedease.util.AppException;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -31,7 +35,7 @@ public class AppointmentController {
 
     // ✅ Book Appointment (Client)
     @PostMapping
-    public ResponseEntity<?> bookAppointment(
+    public ResponseEntity<AppointmentResponse> bookAppointment(
             @AuthenticationPrincipal String username,
             @RequestBody BookAppointmentRequest request) {
 
@@ -41,42 +45,56 @@ public class AppointmentController {
         Establishment establishment = establishmentRepository.findById(request.establishmentId())
                 .orElseThrow(() -> new AppException("ESTAB-001", "Establishment not found"));
 
-        appointmentService.bookAppointment(
+        AppointmentDTO appointmentDTO = appointmentService.bookAppointment(
                 client,
                 establishment,
                 request.date(),
                 request.startTime()
         );
 
-        return ResponseEntity.ok("Appointment booked. Awaiting confirmation.");
+        AppointmentResponse responseBody = new AppointmentResponse(
+                "Appointment Booked Successfully.",
+                appointmentDTO
+        );
+
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(responseBody);
     }
 
     // ✅ Confirm Appointment (Provider Only)
     @PutMapping("/{id}/confirm")
-    public ResponseEntity<?> confirmAppointment(
+    public ResponseEntity<AppointmentResponse> confirmAppointment(
             @PathVariable UUID id,
-            @AuthenticationPrincipal String username) {
+            @AuthenticationPrincipal User provider) {
 
-        User provider = userRepository.findByUsername(username)
-                .orElseThrow(() -> new AppException("USER-001", "User not found"));
+        if (provider.getRole() != UserRoles.PROVIDER) {
+            throw new AppException("AUTH-005", "Only providers can confirm appointments.");
+        }
 
-        appointmentService.confirmAppointment(id, provider);
+        AppointmentDTO appointmentDTO = appointmentService.confirmAppointment(id, provider);
 
-        return ResponseEntity.ok("Appointment confirmed.");
+        AppointmentResponse responseBody = new AppointmentResponse(
+                "Appointment Confirmed",
+                appointmentDTO
+        );
+
+        return ResponseEntity.ok(responseBody);
     }
 
     // ✅ Cancel Appointment (Client or Provider)
     @PutMapping("/{id}/cancel")
-    public ResponseEntity<?> cancelAppointment(
+    public ResponseEntity<AppointmentResponse> cancelAppointment(
             @PathVariable UUID id,
-            @AuthenticationPrincipal String username) {
+            @AuthenticationPrincipal User requester) {
 
-        User requester = userRepository.findByUsername(username)
-                .orElseThrow(() -> new AppException("USER-001", "User not found"));
+        AppointmentDTO appointmentDTO = appointmentService.cancelAppointment(id, requester);
 
-        appointmentService.cancelAppointment(id, requester);
+        AppointmentResponse responseBody = new  AppointmentResponse(
+                "Appointment Cancelled.",
+                appointmentDTO
+        );
 
-        return ResponseEntity.ok("Appointment cancelled.");
+        return ResponseEntity.ok(responseBody);
     }
 
     // 📋 Get My Appointments (Client)
@@ -114,7 +132,7 @@ public class AppointmentController {
     }
 
     @PutMapping("/{id}/reschedule")
-    public ResponseEntity<?> rescheduleAppointment(
+    public ResponseEntity<AppointmentResponse> rescheduleAppointment(
             @PathVariable UUID id,
             @AuthenticationPrincipal String username,
             @RequestBody RescheduleRequest request) {
@@ -122,13 +140,18 @@ public class AppointmentController {
         User requester = userRepository.findByUsername(username)
                 .orElseThrow(() -> new AppException("USER-001", "User not found"));
 
-        appointmentService.rescheduleAppointment(
+        AppointmentDTO appointmentDTO = appointmentService.rescheduleAppointment(
                 id,
                 requester,
                 request.date(),
                 request.startTime()
         );
 
-        return ResponseEntity.ok("Appointment rescheduled. Awaiting confirmation.");
+        AppointmentResponse responseBody = new AppointmentResponse(
+                "Appointment rescheduled. Awaiting confirmation.",
+                appointmentDTO
+        );
+
+        return ResponseEntity.ok(responseBody);
     }
 }

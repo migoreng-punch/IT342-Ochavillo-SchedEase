@@ -1,5 +1,6 @@
 package edu.cit.ochavillo.schedease.service;
 
+import edu.cit.ochavillo.schedease.dto.AppointmentDTO;
 import edu.cit.ochavillo.schedease.entity.Appointment;
 import edu.cit.ochavillo.schedease.entity.Establishment;
 import edu.cit.ochavillo.schedease.entity.User;
@@ -37,7 +38,7 @@ public class AppointmentService {
     }
 
     @Transactional
-    public void bookAppointment(User client,
+    public AppointmentDTO bookAppointment(User client,
                                 Establishment establishment,
                                 LocalDate date,
                                 LocalTime start) {
@@ -48,7 +49,7 @@ public class AppointmentService {
         LocalTime end = start.plusMinutes(duration);
 
         if (!validSlots.contains(start)) {
-            throw new RuntimeException("Selected slot is not available.");
+            throw new AppException("AVAIL-005", "Selected slot is not available.");
         }
 
         LocalDate today = LocalDate.now();
@@ -75,6 +76,8 @@ public class AppointmentService {
         } catch (DataIntegrityViolationException e) {
             throw new AppException("APPT-009", "This time slot has already been booked.");
         }
+
+        return convertToDTO(appointment);
     }
 
     private void validateWeeklyAvailability(Establishment establishment,
@@ -93,33 +96,32 @@ public class AppointmentService {
         );
 
         if (!valid) {
-            throw new RuntimeException("Selected time is outside provider availability.");
+            throw new AppException("AVAIL-006", "Selected time is outside provider availability.");
         }
     }
 
     @Transactional
-    public void confirmAppointment(UUID appointmentId, User provider) {
-
-        if (!provider.getRole().equals("PROVIDER")) {
-            throw new RuntimeException("Only providers can confirm appointments.");
-        }
+    public AppointmentDTO confirmAppointment(UUID appointmentId, User provider) {
 
         Appointment appointment = appointmentRepository.findById(appointmentId)
                 .orElseThrow(() -> new AppException("APPT-001", "Appointment not found."));
 
         if (!appointment.getEstablishment().getOwner().getId().equals(provider.getId())) {
-            throw new RuntimeException("Unauthorized to confirm this appointment.");
+            throw new AppException("AUTH-005", "Unauthorized to confirm this appointment.");
         }
 
         if (appointment.getStatus() != AppointmentStatus.PENDING) {
-            throw new RuntimeException("Only pending appointments can be confirmed.");
+            throw new AppException("APPT-07", "Only pending appointments can be confirmed.");
         }
-
         appointment.setStatus(AppointmentStatus.CONFIRMED);
+
+        appointmentRepository.save(appointment);
+
+        return(convertToDTO(appointment));
     }
 
     @Transactional
-    public void cancelAppointment(UUID appointmentId, User requester) {
+    public AppointmentDTO cancelAppointment(UUID appointmentId, User requester) {
 
         Appointment appointment = appointmentRepository.findById(appointmentId)
                 .orElseThrow(() -> new AppException("APPT-001", "Appointment not found."));
@@ -134,7 +136,7 @@ public class AppointmentService {
                         .equals(requester.getId());
 
         if (!isClient && !isProvider) {
-            throw new RuntimeException("Unauthorized to cancel this appointment.");
+            throw new AppException("AUTH-005", "Unauthorized to confirm this appointment.");
         }
 
         if (appointment.getStatus() == AppointmentStatus.CANCELLED) {
@@ -142,10 +144,14 @@ public class AppointmentService {
         }
 
         appointment.setStatus(AppointmentStatus.CANCELLED);
+
+        appointmentRepository.save(appointment);
+
+        return(convertToDTO(appointment));
     }
 
     @Transactional
-    public void rescheduleAppointment(UUID appointmentId,
+    public AppointmentDTO rescheduleAppointment(UUID appointmentId,
                                       User requester,
                                       LocalDate newDate,
                                       LocalTime newStart) {
@@ -163,16 +169,16 @@ public class AppointmentService {
                         .equals(requester.getId());
 
         if (!isClient && !isProvider) {
-            throw new RuntimeException("Unauthorized to reschedule this appointment.");
+            throw new AppException("AUTH-005", "Unauthorized to reschedule this appointment.");
         }
 
         // ❌ Status restrictions
         if (appointment.getStatus() == AppointmentStatus.COMPLETED) {
-            throw new RuntimeException("Completed appointments cannot be rescheduled.");
+            throw new AppException("APPT-007", "Completed appointments cannot be rescheduled.");
         }
 
         if (appointment.getStatus() == AppointmentStatus.CANCELLED) {
-            throw new RuntimeException("Cancelled appointments cannot be rescheduled.");
+            throw new AppException("APPT-007", "Cancelled appointments cannot be rescheduled.");
         }
 
         // ===============================
@@ -184,7 +190,7 @@ public class AppointmentService {
             int maxReschedules = 3;
 
             if (appointment.getRescheduleCount() >= maxReschedules) {
-                throw new RuntimeException("Reschedule limit reached.");
+                throw new AppException("RESCHED-001", "Reschedule limit reached.");
             }
 
             // ✅ Cooldown (optional but recommended)
@@ -193,7 +199,7 @@ public class AppointmentService {
                 if (appointment.getLastRescheduledAt()
                         .isAfter(LocalDateTime.now().minusMinutes(30))) {
 
-                    throw new RuntimeException(
+                    throw new AppException("RESCHED-002",
                             "You can only reschedule once every 30 minutes."
                     );
                 }
@@ -210,11 +216,11 @@ public class AppointmentService {
 
         // ❌ Past date/time validation
         if (newDate.isBefore(today)) {
-            throw new RuntimeException("Cannot reschedule to a past date.");
+            throw new AppException("RESCHED-003", "Cannot reschedule to a past date.");
         }
 
         if (newDate.isEqual(today) && newStart.isBefore(nowTime)) {
-            throw new RuntimeException("Cannot reschedule to a past time.");
+            throw new AppException("RESCHED-003", "Cannot reschedule to a past time.");
         }
 
         // ⛔ Booking cutoff enforcement
@@ -226,7 +232,7 @@ public class AppointmentService {
             LocalDateTime newDateTime = LocalDateTime.of(newDate, newStart);
 
             if (newDateTime.isBefore(now.plusHours(cutoffHours))) {
-                throw new RuntimeException(
+                throw new AppException("RESCHED-004",
                         "Rescheduling is not allowed within " + cutoffHours + " hours of the appointment."
                 );
             }
@@ -240,7 +246,7 @@ public class AppointmentService {
                 availabilityService.generateAvailableSlots(establishment, newDate);
 
         if (!availableSlots.contains(newStart)) {
-            throw new RuntimeException("Selected slot is not available.");
+            throw new AppException("AVAIL-005","Selected slot is not available.");
         }
 
         // 🔄 Apply changes
@@ -250,6 +256,7 @@ public class AppointmentService {
 
         // 🔁 Reset status
         appointment.setStatus(AppointmentStatus.PENDING);
+        appointmentRepository.save(appointment);
 
         // ===============================
         // 🔁 UPDATE RESCHEDULE TRACKING
@@ -260,14 +267,37 @@ public class AppointmentService {
             );
             appointment.setLastRescheduledAt(LocalDateTime.now());
         }
+        return (convertToDTO(appointment));
     }
 
-    public List<Appointment> getAppointmentsForClient(User client) {
-        return appointmentRepository.findByClient(client);
+    public List<AppointmentDTO> getAppointmentsForClient(User client) {
+
+        List<Appointment> appointments = appointmentRepository.findByClient(client);
+
+        return appointments.stream()
+                .map(this::convertToDTO)
+                .toList();
     }
 
-    public List<Appointment> getAppointmentsForEstablishment(Establishment establishment) {
-        return appointmentRepository.findByEstablishment(establishment);
+    public List<AppointmentDTO> getAppointmentsForEstablishment(Establishment establishment) {
+
+        List<Appointment> appointments = appointmentRepository.findByEstablishment(establishment);
+
+        return appointments.stream()
+                .map(this::convertToDTO)
+                .toList();
+    }
+
+    private AppointmentDTO convertToDTO(Appointment appointment) {
+        return new AppointmentDTO(
+                appointment.getId(),
+                appointment.getClient().getId(),
+                appointment.getEstablishment().getId(),
+                appointment.getAppointmentDate(),
+                appointment.getStartTime(),
+                appointment.getEndTime(),
+                appointment.getStatus()
+        );
     }
 
 }
