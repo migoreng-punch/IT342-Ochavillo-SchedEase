@@ -9,8 +9,13 @@ import edu.cit.ochavillo.schedease.entity.User;
 import edu.cit.ochavillo.schedease.enums.UserRoles;
 import edu.cit.ochavillo.schedease.repository.EstablishmentRepository;
 import edu.cit.ochavillo.schedease.repository.UserRepository;
+import edu.cit.ochavillo.schedease.security.RateLimitPlan;
 import edu.cit.ochavillo.schedease.service.AppointmentService;
+import edu.cit.ochavillo.schedease.service.RateLimitingService;
+import edu.cit.ochavillo.schedease.util.ApiErrorResponse;
 import edu.cit.ochavillo.schedease.util.AppException;
+import io.github.bucket4j.Bucket;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -25,12 +30,16 @@ public class AppointmentController {
     private final AppointmentService appointmentService;
     private final UserRepository userRepository;
     private final EstablishmentRepository establishmentRepository;
+    private final RateLimitingService rateLimiter;
 
     public AppointmentController(AppointmentService appointmentService,
-                                 UserRepository userRepository, EstablishmentRepository establishmentRepository) {
+                                 UserRepository userRepository,
+                                 EstablishmentRepository establishmentRepository,
+                                 RateLimitingService rateLimiter) {
         this.appointmentService = appointmentService;
         this.userRepository = userRepository;
         this.establishmentRepository = establishmentRepository;
+        this.rateLimiter = rateLimiter;
     }
 
     // ✅ Book Appointment (Client)
@@ -132,10 +141,19 @@ public class AppointmentController {
     }
 
     @PutMapping("/{id}/reschedule")
-    public ResponseEntity<AppointmentResponse> rescheduleAppointment(
+    public ResponseEntity<?> rescheduleAppointment(
             @PathVariable UUID id,
             @AuthenticationPrincipal String username,
-            @RequestBody RescheduleRequest request) {
+            @RequestBody RescheduleRequest request,
+            HttpServletRequest httpRequest) {
+
+        String ip = httpRequest.getRemoteAddr();
+
+        Bucket bucket = rateLimiter.resolveBucket(ip, RateLimitPlan.STANDARD);
+        if (!bucket.tryConsume(1)) {
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                    .body(new ApiErrorResponse("429","Too many request attempts. Please wait 1 minute."));
+        }
 
         User requester = userRepository.findByUsername(username)
                 .orElseThrow(() -> new AppException("USER-001", "User not found"));

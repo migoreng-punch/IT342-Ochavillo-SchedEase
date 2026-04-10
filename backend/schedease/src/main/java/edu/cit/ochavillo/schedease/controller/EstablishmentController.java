@@ -6,9 +6,14 @@ import edu.cit.ochavillo.schedease.entity.User;
 import edu.cit.ochavillo.schedease.enums.UserRoles;
 import edu.cit.ochavillo.schedease.repository.EstablishmentRepository;
 import edu.cit.ochavillo.schedease.repository.UserRepository;
+import edu.cit.ochavillo.schedease.security.RateLimitPlan;
 import edu.cit.ochavillo.schedease.service.AvailabilityService;
 import edu.cit.ochavillo.schedease.service.EstablishmentService;
+import edu.cit.ochavillo.schedease.service.RateLimitingService;
+import edu.cit.ochavillo.schedease.util.ApiErrorResponse;
 import edu.cit.ochavillo.schedease.util.AppException;
+import io.github.bucket4j.Bucket;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -24,16 +29,19 @@ public class EstablishmentController {
     private final EstablishmentRepository establishmentRepository;
     private final EstablishmentService establishmentService;
     private final UserRepository userRepository;
+    private final RateLimitingService rateLimiter;
 
     public EstablishmentController(AvailabilityService availabilityService,
                                    EstablishmentRepository establishmentRepository,
                                    EstablishmentService establishmentService,
-                                   UserRepository userRepository) {
+                                   UserRepository userRepository,
+                                   RateLimitingService rateLimiter) {
 
         this.availabilityService = availabilityService;
         this.establishmentRepository = establishmentRepository;
         this.establishmentService = establishmentService;
         this.userRepository = userRepository;
+        this.rateLimiter = rateLimiter;
     }
 
     @GetMapping("/{id}/slots")
@@ -51,10 +59,19 @@ public class EstablishmentController {
 
     // 🔎 Browse & Search Establishments (Now with Cursor Pagination!)
     @GetMapping
-    public ResponseEntity<CursorResponse<EstablishmentDTO>> getAllEstablishments(
+    public ResponseEntity<?> getAllEstablishments(
             @RequestParam(required = false) String search,
             @RequestParam(required = false) Long cursor,
-            @RequestParam(defaultValue = "10") int limit) { // Default to 10 items if mobile forgets to ask
+            @RequestParam(defaultValue = "10") int limit,
+            HttpServletRequest httpRequest) { // Default to 10 items if mobile forgets to ask
+
+        String ip = httpRequest.getRemoteAddr();
+
+        Bucket bucket = rateLimiter.resolveBucket(ip, RateLimitPlan.SEARCH);
+        if (!bucket.tryConsume(1)) {
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                    .body(new ApiErrorResponse("429","Too many Requests attempts. Please wait 1 minute."));
+        }
 
         return ResponseEntity.ok(
                 establishmentService.getEstablishments(search, cursor, limit)
@@ -63,7 +80,15 @@ public class EstablishmentController {
 
     // 🔎 Get Single Establishment Details
     @GetMapping("/{id}")
-    public ResponseEntity<EstablishmentDTO> getEstablishment(@PathVariable Long id) {
+    public ResponseEntity<?> getEstablishment(@PathVariable Long id, HttpServletRequest httpRequest) {
+
+        String ip = httpRequest.getRemoteAddr();
+
+        Bucket bucket = rateLimiter.resolveBucket(ip, RateLimitPlan.SEARCH);
+        if (!bucket.tryConsume(1)) {
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                    .body(new ApiErrorResponse("429","Too many request. Please wait 1 minute."));
+        }
 
         return ResponseEntity.ok(
                 establishmentService.getEstablishmentById(id)

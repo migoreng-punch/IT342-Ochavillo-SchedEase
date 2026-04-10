@@ -52,7 +52,7 @@ public class AuthService {
         }
 
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new AppException("AUTH-004", "Username already exists");
+            throw new AppException("AUTH-004", "Email already exists");
         }
 
         User user = new User();

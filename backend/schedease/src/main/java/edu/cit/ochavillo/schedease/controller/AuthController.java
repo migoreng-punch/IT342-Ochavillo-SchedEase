@@ -4,7 +4,11 @@ import edu.cit.ochavillo.schedease.dto.LoginRequest;
 import edu.cit.ochavillo.schedease.dto.LoginResponse;
 import edu.cit.ochavillo.schedease.dto.RegisterRequest;
 import edu.cit.ochavillo.schedease.dto.RegisterResponse;
+import edu.cit.ochavillo.schedease.security.RateLimitPlan;
 import edu.cit.ochavillo.schedease.service.AuthService;
+import edu.cit.ochavillo.schedease.service.RateLimitingService;
+import edu.cit.ochavillo.schedease.util.ApiErrorResponse;
+import io.github.bucket4j.Bucket;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpHeaders;
@@ -18,15 +22,28 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     private final AuthService authService;
+    private final RateLimitingService rateLimiter;
 
-    public AuthController(AuthService authService) {
+    public AuthController(AuthService authService, RateLimitingService rateLimiter) {
         this.authService = authService;
+        this.rateLimiter = rateLimiter;
     }
 
     @PostMapping("/register")
-    public ResponseEntity<RegisterResponse> register(
-            @Valid @RequestBody RegisterRequest request) {
+    public ResponseEntity<?> register(
+            @Valid @RequestBody RegisterRequest request,
+            HttpServletRequest httpRequest) { // 🚨 Added httpRequest to get the IP
 
+        String ip = httpRequest.getRemoteAddr();
+
+        // 🚨 1. RATE LIMIT CHECK: Stop bot account creation
+        Bucket bucket = rateLimiter.resolveBucket(ip, RateLimitPlan.AUTH);
+        if (!bucket.tryConsume(1)) {
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                    .body(new ApiErrorResponse("429","Too many registration attempts. Please wait 1 minute."));
+        }
+
+        // 2. Proceed with registration
         authService.register(request);
 
         return ResponseEntity
@@ -35,14 +52,24 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<LoginResponse> login(
+    public ResponseEntity<?> login(
             @Valid @RequestBody LoginRequest request,
             HttpServletRequest httpRequest) {
 
         String ip = httpRequest.getRemoteAddr();
+
+        // 🚨 1. RATE LIMIT CHECK: Bounce them immediately if they are spamming
+        Bucket bucket = rateLimiter.resolveBucket(ip, RateLimitPlan.AUTH);
+        if (!bucket.tryConsume(1)) {
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                    .body(new ApiErrorResponse("429","Too many login attempts. Please wait 1 minute."));
+        }
+
+        // 2. Proceed with secure login
         String userAgent = httpRequest.getHeader("User-Agent");
         LoginResponse response = authService.login(request, ip, userAgent);
 
+        // 3. Build the secure HttpOnly cookie
         ResponseCookie refreshCookie = ResponseCookie.from(
                         "refreshToken", response.refreshToken())
                 .httpOnly(true)
@@ -52,19 +79,26 @@ public class AuthController {
                 .sameSite("Strict")
                 .build();
 
+        // 4. Return Access Token in body, Refresh Token in cookie
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, refreshCookie.toString())
-                // return ONLY access token to client
                 .body(new LoginResponse(response.accessToken(), null));
     }
 
 
     @PostMapping("/refresh")
-    public ResponseEntity<LoginResponse> refresh(
+    public ResponseEntity<?> refresh(
             @CookieValue("refreshToken") String refreshToken,
             HttpServletRequest httpRequest) {
 
         String ip = httpRequest.getRemoteAddr();
+
+        Bucket bucket = rateLimiter.resolveBucket(ip, RateLimitPlan.AUTH);
+        if (!bucket.tryConsume(1)) {
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                    .body(new ApiErrorResponse("429","Too many request attempts. Please wait 1 minute."));
+        }
+
         String userAgent = httpRequest.getHeader("User-Agent");
         LoginResponse response = authService.refresh(refreshToken, ip, userAgent);
 
@@ -122,8 +156,16 @@ public class AuthController {
     }
 
     @GetMapping("/verify")
-    public ResponseEntity<?> verify(@RequestParam String token) {
+    public ResponseEntity<?> verify(@RequestParam String token,
+                                    HttpServletRequest httpRequest) {
 
+        String ip = httpRequest.getRemoteAddr();
+
+        Bucket bucket = rateLimiter.resolveBucket(ip, RateLimitPlan.AUTH);
+        if (!bucket.tryConsume(1)) {
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                    .body(new ApiErrorResponse("429","Too many login attempts. Please wait 1 minute."));
+        }
         authService.verify(token);
 
         return ResponseEntity.ok("Account verified successfully");
@@ -131,7 +173,16 @@ public class AuthController {
 
     @PostMapping("/resend-verification")
     public ResponseEntity<?> resendVerification(
-            @RequestParam String email) {
+            @RequestParam String email,
+            HttpServletRequest httpRequest) {
+
+        String ip = httpRequest.getRemoteAddr();
+
+        Bucket bucket = rateLimiter.resolveBucket(ip, RateLimitPlan.AUTH);
+        if (!bucket.tryConsume(1)) {
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                    .body(new ApiErrorResponse("429","Too many login attempts. Please wait 1 minute."));
+        }
 
         authService.resendVerification(email);
 
