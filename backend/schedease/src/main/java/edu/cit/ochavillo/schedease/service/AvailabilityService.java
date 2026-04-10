@@ -1,11 +1,9 @@
 package edu.cit.ochavillo.schedease.service;
 
-import edu.cit.ochavillo.schedease.entity.Appointment;
-import edu.cit.ochavillo.schedease.entity.Establishment;
-import edu.cit.ochavillo.schedease.entity.User;
-import edu.cit.ochavillo.schedease.entity.WeeklyAvailability;
+import edu.cit.ochavillo.schedease.entity.*;
 import edu.cit.ochavillo.schedease.enums.AppointmentStatus;
 import edu.cit.ochavillo.schedease.repository.AppointmentRepository;
+import edu.cit.ochavillo.schedease.repository.AvailabilityOverrideRepository;
 import edu.cit.ochavillo.schedease.repository.WeeklyAvailabilityRepository;
 import edu.cit.ochavillo.schedease.util.AppException;
 import jakarta.transaction.Transactional;
@@ -16,6 +14,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -24,13 +23,16 @@ public class AvailabilityService {
 
     private final WeeklyAvailabilityRepository availabilityRepository;
     private final AppointmentRepository appointmentRepository;
+    private final AvailabilityOverrideRepository availabilityOverrideRepository;
 
     public AvailabilityService(
             WeeklyAvailabilityRepository availabilityRepository,
-            AppointmentRepository appointmentRepository) {
+            AppointmentRepository appointmentRepository,
+            AvailabilityOverrideRepository availabilityOverrideRepository) {
 
         this.availabilityRepository = availabilityRepository;
         this.appointmentRepository = appointmentRepository;
+        this.availabilityOverrideRepository = availabilityOverrideRepository;
     }
 
     @Transactional
@@ -91,6 +93,27 @@ public class AvailabilityService {
 
         List<WeeklyAvailability> schedules =
                 availabilityRepository.findByEstablishmentAndDayOfWeek(establishment, day);
+
+        Optional<AvailabilityOverride> overrideOpt =
+                availabilityOverrideRepository.findByEstablishmentAndOverrideDate(establishment, date);
+
+        if (overrideOpt.isPresent()) {
+
+            AvailabilityOverride override = overrideOpt.get();
+
+            // ❌ Fully unavailable
+            if (override.isUnavailable()) {
+                return List.of();
+            }
+
+            // ✅ Custom hours
+            WeeklyAvailability temp = new WeeklyAvailability();
+            temp.setStartTime(override.getStartTime());
+            temp.setEndTime(override.getEndTime());
+
+            schedules = List.of(temp);
+        }
+
 
         if (schedules.isEmpty()) {
             return List.of();
