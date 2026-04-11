@@ -5,4 +5,13 @@ import tailwindcss from '@tailwindcss/vite'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  server: {
+    proxy: {
+      // Tell Vite to forward /api requests to Spring Boot
+      '/api': {
+        target: 'http://localhost:8080', 
+        changeOrigin: true,
+      }
+    }
+  }
 })

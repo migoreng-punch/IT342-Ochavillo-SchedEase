@@ -45,8 +45,10 @@ public class AppointmentController {
     // ✅ Book Appointment (Client)
     @PostMapping
     public ResponseEntity<AppointmentResponse> bookAppointment(
-            @AuthenticationPrincipal String username,
+            @AuthenticationPrincipal User user,
             @RequestBody BookAppointmentRequest request) {
+
+        String username = user.getUsername();
 
         User client = userRepository.findByUsername(username)
                 .orElseThrow(() -> new AppException("USER-001", "User not found"));

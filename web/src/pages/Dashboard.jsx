@@ -1,5 +1,4 @@
-import ApiTestWidget from "../components/ApiTestWidget";
-import CreateEstablishment from "../components/CreateEstablishmet";
+
 
 export default function Dashboard() {
   return (
@@ -7,8 +6,6 @@ export default function Dashboard() {
       <Card title="Total Appointments" value="124" />
       <Card title="Pending Requests" value="8" />
       <Card title="Upcoming Today" value="5" />
-      <ApiTestWidget/>
-      <CreateEstablishment/>
     </div>
   );
 }
