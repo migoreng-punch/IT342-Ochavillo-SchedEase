@@ -37,7 +37,7 @@ export default function Login() {
       // If it succeeds, redirect to dashboard
       navigate("/dashboard");
 
-    } catch (err) {
+    } catch {
       // If your axios instance throws an error, it gets caught here
       setServerError("Invalid username or password");
     } finally {

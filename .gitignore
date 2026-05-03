@@ -3,7 +3,7 @@
 # ===============================
 **/target/
 **/*.class
-**/.mvn/
+/.mvn/wrapper/maven-wrapper.jar
 
 # ===============================
 # React / Node
