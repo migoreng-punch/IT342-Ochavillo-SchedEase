@@ -33,7 +33,6 @@ export default function BookingPage() {
         setEstablishment(response.data);
       } catch (error) {
         console.error("Failed to fetch establishment:", error);
-        setEstablishment(mockEstablishment); // Fallback for testing UI
       } finally {
         setLoading(false);
       }
@@ -84,7 +83,7 @@ export default function BookingPage() {
     };
 
     fetchSlots();
-  }, [selectedDate, id]);
+  }, [selectedDate, id, axiosPrivate]);
 
   // --- Calendar Logic ---
   const getDaysInMonth = (year, month) =>
