@@ -43,10 +43,13 @@ jobs:
           cache: 'gradle'
 
       - name: Build and Test Backend
-        working-directory: ./backend/schedease
-        run: |
-          chmod +x ./mvnw
-          ./mvnw clean verify
+        working-directory: ./backend
+        env:
+          SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/testdb
+          SPRING_DATASOURCE_USERNAME: postgres
+          SPRING_DATASOURCE_PASSWORD: password
+          JWT_SECRET: dummy-secret-key-for-ci-testing-only-do-not-use-in-production-1234567890
+        run: mvn clean verify
 
   # --------------------------------------------------------
   # 2. REACT FRONTEND (web)
