@@ -16,8 +16,6 @@ jobs:
     name: Build Spring Boot 3.5.11
     runs-on: ubuntu-latest
 
-    # Spinning up a PostgreSQL service container in case your
-    # Spring Boot integration tests require a live database connection.
     services:
       postgres:
         image: postgres:15
@@ -37,20 +35,19 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Set up JDK 21 (Standard for Spring Boot 3.x)
+      - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
           java-version: '21'
           distribution: 'temurin'
-          cache: 'gradle' # Change to 'maven' if you use pom.xml
+          cache: 'gradle'
 
       - name: Build and Test Backend
-        working-directory: ./backend # Adjust path to your Spring Boot root
-        # Using Gradle here; swap to `./mvnw clean verify` if using Maven
+        working-directory: ./backend
         run: ./gradlew build
 
   # --------------------------------------------------------
-  # 2. REACT FRONTEND (Vite + Tailwind v4)
+  # 2. REACT FRONTEND (web)
   # --------------------------------------------------------
   frontend-react:
     name: Build React App
@@ -64,23 +61,22 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: './frontend/package-lock.json' # Adjust path
+          cache-dependency-path: './web/package-lock.json' # <-- Fixed path
 
       - name: Install Dependencies
-        working-directory: ./frontend
+        working-directory: ./web # <-- Fixed path
         run: npm ci
 
       - name: Run ESLint
-        working-directory: ./frontend
-        run: npx eslint . # Leverages your @eslint/js@9.39.4 setup
+        working-directory: ./web # <-- Fixed path
+        run: npx eslint .
 
       - name: Build Vite Project
-        working-directory: ./frontend
-        # This will compile your React 19 app and process Tailwind v4
+        working-directory: ./web # <-- Fixed path
         run: npm run build
 
   # --------------------------------------------------------
-  # 3. ANDROID (Kotlin compileSdk 34)
+  # 3. ANDROID (mobile)
   # --------------------------------------------------------
   mobile-android:
     name: Build Android App
@@ -89,7 +85,7 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Set up JDK 17 (Required for modern Android builds)
+      - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
@@ -99,15 +95,14 @@ jobs:
       - name: Setup Android Environment
         uses: android-actions/setup-android@v3
 
-      # Note: Ensure your build.gradle.kts or libs.versions.toml has Kotlin
-      # explicitly pinned to 1.9.0 to prevent build mismatch errors in CI.
+      # Using your defined Kotlin 1.9.0 configuration to prevent build mismatches
       - name: Build Android APK (Debug)
-        working-directory: ./android # Adjust path to your Android root
+        working-directory: ./mobile # <-- Fixed path
         run: ./gradlew assembleDebug
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: app-debug
-          path: ./android/app/build/outputs/apk/debug/app-debug.apk
+          path: ./mobile/app/build/outputs/apk/debug/app-debug.apk # <-- Fixed path
           retention-days: 7
