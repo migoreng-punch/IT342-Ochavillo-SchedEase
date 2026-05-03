@@ -44,7 +44,9 @@ jobs:
 
       - name: Build and Test Backend
         working-directory: ./backend
-        run: ./gradlew build
+        run: |
+          chmod +x ./mvnw
+          ./mvnw clean verify
 
   # --------------------------------------------------------
   # 2. REACT FRONTEND (web)
@@ -98,7 +100,9 @@ jobs:
       # Using your defined Kotlin 1.9.0 configuration to prevent build mismatches
       - name: Build Android APK (Debug)
         working-directory: ./mobile # <-- Fixed path
-        run: ./gradlew assembleDebug
+        run: |
+          chmod +x ./gradlew
+          ./gradlew assembleDebug
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4

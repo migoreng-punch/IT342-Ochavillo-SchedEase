@@ -14,7 +14,7 @@ import java.time.LocalTime;
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "availability_overides")
+@Table(name = "availability_overrides")
 public class AvailabilityOverride {
 
     @Id

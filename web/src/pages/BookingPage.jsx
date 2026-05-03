@@ -463,32 +463,3 @@ const formatTimeForJava = (time12h) => {
 
   return `${hours.toString().padStart(2, "0")}:${minutes}:00`;
 };
-
-// --- Fallback Data ---
-const mockEstablishment = {
-  id: 1,
-  name: "Wellness Spa & Massage",
-  description:
-    "Relax and rejuvenate with our premium spa treatments and therapeutic massage services.",
-  address: "456 Oak Avenue, Westside",
-  contactEmail: "hello@wellnessspa.com",
-};
-
-const mockSlots = [
-  { time: "9:00 AM", booked: false },
-  { time: "9:30 AM", booked: false },
-  { time: "10:00 AM", booked: true }, // Disabled slot
-  { time: "10:30 AM", booked: false },
-  { time: "11:00 AM", booked: false },
-  { time: "11:30 AM", booked: true }, // Disabled slot
-  { time: "12:00 PM", booked: false },
-  { time: "12:30 PM", booked: false },
-  { time: "1:00 PM", booked: false },
-  { time: "1:30 PM", booked: false },
-  { time: "2:00 PM", booked: true }, // Disabled slot
-  { time: "2:30 PM", booked: false },
-  { time: "3:00 PM", booked: false },
-  { time: "3:30 PM", booked: false },
-  { time: "4:00 PM", booked: false },
-  { time: "4:30 PM", booked: false },
-];
