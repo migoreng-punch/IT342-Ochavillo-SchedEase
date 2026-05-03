@@ -43,7 +43,7 @@ jobs:
           cache: 'gradle'
 
       - name: Build and Test Backend
-        working-directory: ./backend
+        working-directory: ./backend/schedease
         env:
           SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/testdb
           SPRING_DATASOURCE_USERNAME: postgres
