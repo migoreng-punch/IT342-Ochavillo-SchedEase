@@ -1,0 +1,113 @@
+name: Full Stack CI Pipeline
+
+on:
+  push:
+    branches:
+      - '**'
+  pull_request:
+    branches:
+      - '**'
+
+jobs:
+  # --------------------------------------------------------
+  # 1. SPRING BOOT BACKEND
+  # --------------------------------------------------------
+  backend-spring:
+    name: Build Spring Boot 3.5.11
+    runs-on: ubuntu-latest
+
+    # Spinning up a PostgreSQL service container in case your
+    # Spring Boot integration tests require a live database connection.
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: testdb
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21 (Standard for Spring Boot 3.x)
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'gradle' # Change to 'maven' if you use pom.xml
+
+      - name: Build and Test Backend
+        working-directory: ./backend # Adjust path to your Spring Boot root
+        # Using Gradle here; swap to `./mvnw clean verify` if using Maven
+        run: ./gradlew build
+
+  # --------------------------------------------------------
+  # 2. REACT FRONTEND (Vite + Tailwind v4)
+  # --------------------------------------------------------
+  frontend-react:
+    name: Build React App
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: './frontend/package-lock.json' # Adjust path
+
+      - name: Install Dependencies
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: Run ESLint
+        working-directory: ./frontend
+        run: npx eslint . # Leverages your @eslint/js@9.39.4 setup
+
+      - name: Build Vite Project
+        working-directory: ./frontend
+        # This will compile your React 19 app and process Tailwind v4
+        run: npm run build
+
+  # --------------------------------------------------------
+  # 3. ANDROID (Kotlin compileSdk 34)
+  # --------------------------------------------------------
+  mobile-android:
+    name: Build Android App
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17 (Required for modern Android builds)
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'gradle'
+
+      - name: Setup Android Environment
+        uses: android-actions/setup-android@v3
+
+      # Note: Ensure your build.gradle.kts or libs.versions.toml has Kotlin
+      # explicitly pinned to 1.9.0 to prevent build mismatch errors in CI.
+      - name: Build Android APK (Debug)
+        working-directory: ./android # Adjust path to your Android root
+        run: ./gradlew assembleDebug
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug
+          path: ./android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 7
