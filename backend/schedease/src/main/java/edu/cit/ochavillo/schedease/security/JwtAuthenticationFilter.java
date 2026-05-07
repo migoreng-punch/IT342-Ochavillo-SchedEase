@@ -18,8 +18,8 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import edu.cit.ochavillo.schedease.entity.User;
-import edu.cit.ochavillo.schedease.repository.UserRepository;
+import edu.cit.ochavillo.schedease.user.entity.User;
+import edu.cit.ochavillo.schedease.user.repository.UserRepository;
 
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
