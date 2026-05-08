@@ -94,9 +94,12 @@ public class AvailabilityService {
         }
 
         DayOfWeek day = date.getDayOfWeek();
+        System.out.println("1. Looking for day: " + day.name());
 
         List<WeeklyAvailability> schedules =
                 availabilityRepository.findByEstablishmentAndDayOfWeek(establishment, day);
+
+        System.out.println("2. Found schedules in DB: " + schedules.size());
 
         Optional<AvailabilityOverride> overrideOpt =
                 availabilityOverrideRepository.findByEstablishmentAndOverrideDate(establishment, date);
@@ -120,6 +123,7 @@ public class AvailabilityService {
 
 
         if (schedules.isEmpty()) {
+            System.out.println("3. Bailing out because schedules is EMPTY!");
             return List.of();
         }
 

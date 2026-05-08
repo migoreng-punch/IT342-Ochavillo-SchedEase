@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useAuth } from "../auth/AuthContext"; // Adjust path
+import { useAuth } from "../auth/context/AuthContext"; // Adjust path
 import api from "./axios"; // Your base axios instance
 
 export function useAxiosPrivate() {

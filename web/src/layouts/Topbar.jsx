@@ -1,5 +1,5 @@
 import api from "../api/axios";
-import { useAuth } from "../auth/AuthContext";
+import { useAuth } from "../auth/context/AuthContext";
 
 export default function Topbar() {
   const { setAccessToken } = useAuth();

@@ -1,50 +1,7 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useAuth } from "../auth/AuthContext"; // 1. Import your custom hook (adjust path if needed)
-
-const schema = z.object({
-  username: z.string().min(3, "Username is required"),
-  password: z.string().min(6, "Password is required"),
-});
+import { Link } from "react-router-dom";
+import { LoginForm } from "../auth/components/LoginForm"; // Adjust path
 
 export default function Login() {
-  const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
-  const [serverError, setServerError] = useState(null);
-  
-  const { login } = useAuth(); // 2. Grab the login function from context
-
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm({
-    resolver: zodResolver(schema),
-  });
-
-  const onSubmit = async (data) => {
-    setLoading(true);
-    setServerError(null);
-
-    try {
-      // 3. Just pass the data to your context! 
-      // It handles the API call and sets the token in memory safely.
-      await login(data); 
-
-      // If it succeeds, redirect to dashboard
-      navigate("/dashboard");
-
-    } catch {
-      // If your axios instance throws an error, it gets caught here
-      setServerError("Invalid username or password");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-4">
       <div className="w-full max-w-md bg-card shadow-soft rounded-xl p-8">
@@ -58,36 +15,8 @@ export default function Login() {
           </p>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-
-          {serverError && (
-            <div className="text-red-500 text-sm bg-red-50 p-3 rounded-lg">{serverError}</div>
-          )}
-
-          <InputField
-            label="Username"
-            name="username"
-            register={register}
-            error={errors.username}
-          />
-
-          <InputField
-            label="Password"
-            name="password"
-            type="password"
-            register={register}
-            error={errors.password}
-          />
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-[var(--color-primary)] text-white py-3 rounded-lg hover:bg-[var(--color-primaryDark)] transition disabled:opacity-60 font-medium"
-          >
-            {loading ? "Signing in..." : "Sign In"}
-          </button>
-
-        </form>
+        {/* The extracted feature component */}
+        <LoginForm />
 
         <div className="mt-6 text-center text-sm text-muted">
           Don’t have an account?{" "}
@@ -100,24 +29,6 @@ export default function Login() {
         </div>
 
       </div>
-    </div>
-  );
-}
-
-function InputField({ label, name, register, error, type = "text" }) {
-  return (
-    <div>
-      <label className="block text-sm font-medium text-gray-700 mb-1">
-        {label}
-      </label>
-      <input
-        type={type}
-        {...register(name)}
-        className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary transition"
-      />
-      {error && (
-        <p className="text-red-500 text-sm mt-1">{error.message}</p>
-      )}
     </div>
   );
 }

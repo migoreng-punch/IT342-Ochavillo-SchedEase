@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "./auth/AuthContext";
+import { AuthProvider } from "./auth/context/AuthContext";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
@@ -15,7 +15,7 @@ function App() {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          <Route path="" element={<HomePage />}/>
+          <Route path="/" element={<HomePage />}/>
           <Route path="/establishment/:id" element={<BookingPage />} />
 
           <Route
