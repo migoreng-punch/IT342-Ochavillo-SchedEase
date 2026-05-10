@@ -16,7 +16,6 @@ vi.mock('../../api/interceptor', () => ({
 // Mock your helper functions so they don't break the test
 vi.mock('../utils/bookingHelpers', () => ({
   formatTimeForUI: (time) => time,
-  formatDateForAPI: (date) => '2026-05-10',
   formatTimeForJava: (time) => time
 }));
 
