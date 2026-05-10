@@ -4,6 +4,7 @@ import edu.cit.ochavillo.schedease.availability.dto.CreateWeeklyAvailabilityRequ
 import edu.cit.ochavillo.schedease.establishment.entity.Establishment;
 import edu.cit.ochavillo.schedease.user.entity.User;
 import edu.cit.ochavillo.schedease.establishment.repository.EstablishmentRepository;
+import edu.cit.ochavillo.schedease.user.enums.UserRoles;
 import edu.cit.ochavillo.schedease.user.repository.UserRepository;
 import edu.cit.ochavillo.schedease.availability.service.AvailabilityService;
 import edu.cit.ochavillo.schedease.util.AppException;
@@ -33,7 +34,7 @@ public class WeeklyAvailabilityController {
 
     @PostMapping
     public ResponseEntity<?> createAvailability(
-            @AuthenticationPrincipal String username,
+            @AuthenticationPrincipal(expression = "username") String username,
             @RequestBody CreateWeeklyAvailabilityRequest request) {
 
         User provider = userRepository.findByUsername(username)
@@ -42,6 +43,10 @@ public class WeeklyAvailabilityController {
         Establishment establishment = establishmentRepository
                 .findByOwner(provider)
                 .orElseThrow(() -> new AppException("ESTAB-001", "Establishment not found"));
+
+        if((provider.getRole() != UserRoles.PROVIDER)){
+            throw new AppException("AUTH-005", "Only Providers can create Establishment");
+        }
 
         availabilityService.createWeeklyAvailability(
                 provider,

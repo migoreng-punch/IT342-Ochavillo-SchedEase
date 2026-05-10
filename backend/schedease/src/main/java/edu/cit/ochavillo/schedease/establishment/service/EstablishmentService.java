@@ -1,6 +1,7 @@
 package edu.cit.ochavillo.schedease.establishment.service;
 
 import edu.cit.ochavillo.schedease.establishment.dto.CreateEstablishmentRequest;
+import edu.cit.ochavillo.schedease.user.enums.UserRoles;
 import edu.cit.ochavillo.schedease.util.CursorResponse;
 import edu.cit.ochavillo.schedease.establishment.dto.EstablishmentDTO;
 import edu.cit.ochavillo.schedease.establishment.dto.UpdateEstablishmentRequest;
@@ -73,6 +74,10 @@ public class EstablishmentService {
     @Transactional
     public EstablishmentDTO createEstablishment(User provider,
                                                            CreateEstablishmentRequest request) {
+
+        if (provider.getRole() != UserRoles.PROVIDER) {
+            throw new SecurityException("Only providers can create establishments.");
+        }
 
         Establishment establishment = new Establishment();
         establishment.setName(request.name());

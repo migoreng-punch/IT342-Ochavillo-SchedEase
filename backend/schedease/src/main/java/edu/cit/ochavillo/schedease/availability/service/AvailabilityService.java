@@ -46,10 +46,6 @@ public class AvailabilityService {
                                          LocalTime start,
                                          LocalTime end) {
 
-        if (!provider.getRole().equals("PROVIDER")) {
-            throw new AppException("AUTH-005", "Only providers can set availability.");
-        }
-
         if (!establishment.getOwner().getId().equals(provider.getId())) {
             throw new AppException("AUTH-005", "Unauthorized to modify this establishment.");
         }
@@ -105,20 +101,25 @@ public class AvailabilityService {
                 availabilityOverrideRepository.findByEstablishmentAndOverrideDate(establishment, date);
 
         if (overrideOpt.isPresent()) {
-
+            System.out.println("🚨 OVERRIDE FOUND for date: " + date);
             AvailabilityOverride override = overrideOpt.get();
 
             // ❌ Fully unavailable
             if (override.isUnavailable()) {
+                System.out.println("🚨 OVERRIDE ACTION: Establishment is marked as FULLY CLOSED today.");
                 return List.of();
             }
 
             // ✅ Custom hours
+            System.out.println("🚨 OVERRIDE ACTION: Changing schedule to custom hours -> "
+                    + override.getStartTime() + " to " + override.getEndTime());
             WeeklyAvailability temp = new WeeklyAvailability();
             temp.setStartTime(override.getStartTime());
             temp.setEndTime(override.getEndTime());
 
             schedules = List.of(temp);
+        } else{
+            System.out.println("No Availability Override");
         }
 
 
@@ -126,6 +127,8 @@ public class AvailabilityService {
             System.out.println("3. Bailing out because schedules is EMPTY!");
             return List.of();
         }
+
+
 
         List<Appointment> existingAppointments =
                 appointmentRepository
