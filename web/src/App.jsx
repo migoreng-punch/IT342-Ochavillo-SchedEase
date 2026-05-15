@@ -7,6 +7,7 @@ import ProtectedRoute from "./routes/ProtectedRoute";
 import AppLayout from "./layouts/AppLayout";
 import HomePage from "./pages/HomePage";
 import BookingPage from "./pages/BookingPage";
+import LandingPage from "./pages/LandingPage";
 
 function App() {
   return (
@@ -15,8 +16,7 @@ function App() {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          <Route path="/" element={<HomePage />}/>
-          <Route path="/establishment/:id" element={<BookingPage />} />
+          <Route path="/" element={<LandingPage />}/>
 
           <Route
             path="/dashboard"
@@ -24,6 +24,8 @@ function App() {
               <ProtectedRoute>
                 <AppLayout>
                   <Dashboard />
+                  <Route path="/homepage" element={<HomePage />}/>
+                  <Route path="/establishment/:id" element={<BookingPage />} />
                 </AppLayout>
               </ProtectedRoute>
             }
