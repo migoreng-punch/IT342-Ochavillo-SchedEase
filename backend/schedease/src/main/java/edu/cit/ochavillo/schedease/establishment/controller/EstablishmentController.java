@@ -23,6 +23,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/establishments")
@@ -121,23 +122,64 @@ public class EstablishmentController {
     }
 
     // ✏️ Update Establishment
-    @PutMapping("/{id}")
-    public ResponseEntity<EstablishmentResponse> updateEstablishment(
-            @PathVariable Long id,
+    @PutMapping("/me")
+    public ResponseEntity<EstablishmentResponse> updateMyEstablishment(
             @AuthenticationPrincipal User provider,
             @RequestBody UpdateEstablishmentRequest request) {
 
-        if((provider.getRole() != UserRoles.PROVIDER)){
-            throw new AppException("AUTH-005", "Only Providers can create Establishment");
+        if (provider.getRole() != UserRoles.PROVIDER) {
+            throw new AppException("AUTH-005", "Only Providers can update Establishments");
         }
 
-        EstablishmentDTO establishmentDto = establishmentService.updateEstablishment(id, provider, request);
+        Establishment establishment = establishmentRepository
+                .findByOwner(provider)
+                .orElseThrow(() -> new AppException("ESTAB-001", "Establishment not found"));
 
-        EstablishmentResponse responseBody  = new EstablishmentResponse(
+        // Reusing your existing service logic!
+        EstablishmentDTO establishmentDto = establishmentService.updateEstablishment(
+                establishment.getId(),
+                provider,
+                request
+        );
+
+        EstablishmentResponse responseBody = new EstablishmentResponse(
                 "Establishment Updated Successfully",
                 establishmentDto
         );
 
         return ResponseEntity.ok(responseBody);
+    }
+
+    // 🔎 Get MY Establishment Details
+    @GetMapping("/me")
+    public ResponseEntity<?> getMyEstablishment(@AuthenticationPrincipal User provider) {
+
+        if (provider.getRole() != UserRoles.PROVIDER) {
+            throw new AppException("AUTH-005", "Only Providers have an establishment");
+        }
+
+        Establishment establishment = establishmentRepository
+                .findByOwner(provider)
+                .orElseThrow(() -> new AppException("ESTAB-001", "Establishment not found"));
+
+        // Reusing your existing service logic!
+        return ResponseEntity.ok(
+                establishmentService.getEstablishmentById(establishment.getId())
+        );
+    }
+
+    @DeleteMapping("/me")
+    public ResponseEntity<?> deleteMyEstablishment(@AuthenticationPrincipal User provider) {
+
+        // 1. Optional: You could add a check here to ensure the user is actually a PROVIDER
+        // if (!provider.getRole().equals(UserRoles.PROVIDER)) {
+        //     throw new AppException("AUTH-403", "Only providers can delete establishments.");
+        // }
+
+        // 2. Call the service
+        establishmentService.deleteMyEstablishment(provider);
+
+        // 3. Return a clean success message
+        return ResponseEntity.ok(Map.of("message", "Establishment successfully deleted."));
     }
 }

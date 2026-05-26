@@ -22,8 +22,8 @@ public class Establishment {
     @Column(name = "establishment_id")
     private Long Id;
 
-    @OneToOne(optional = false)
-    @JoinColumn(name = "owner_id")
+    @OneToOne(optional = false, cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "owner_id", referencedColumnName = "user_id")
     private User owner;
 
     @Column(nullable = false)
@@ -41,7 +41,7 @@ public class Establishment {
     @Column(name = "slot_duration_minutes", nullable = false)
     private Integer slotDurationMinutes;
 
-    @Column(name = "buffer_mintues")
+    @Column(name = "buffer_minutes")
     private Integer bufferMinutes;
 
     @Column(name = "booking_cutoff_hours")

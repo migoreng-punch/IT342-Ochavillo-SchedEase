@@ -4,10 +4,15 @@ import edu.cit.ochavillo.schedease.auth.dto.LoginRequest;
 import edu.cit.ochavillo.schedease.auth.dto.LoginResponse;
 import edu.cit.ochavillo.schedease.auth.dto.RegisterRequest;
 import edu.cit.ochavillo.schedease.auth.dto.RegisterResponse;
+import edu.cit.ochavillo.schedease.auth.entity.RefreshToken;
+import edu.cit.ochavillo.schedease.auth.service.RefreshTokenService;
+import edu.cit.ochavillo.schedease.security.JwtUtil;
 import edu.cit.ochavillo.schedease.security.RateLimitPlan;
 import edu.cit.ochavillo.schedease.auth.service.AuthService;
 import edu.cit.ochavillo.schedease.security.RateLimitingService;
+import edu.cit.ochavillo.schedease.user.entity.User;
 import edu.cit.ochavillo.schedease.util.ApiErrorResponse;
+import edu.cit.ochavillo.schedease.util.ExpiredTokenException;
 import io.github.bucket4j.Bucket;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -15,7 +20,12 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -23,32 +33,59 @@ public class AuthController {
 
     private final AuthService authService;
     private final RateLimitingService rateLimiter;
+    private final JwtUtil jwtUtil;
+    private final RefreshTokenService refreshTokenService;
 
-    public AuthController(AuthService authService, RateLimitingService rateLimiter) {
+    public AuthController(AuthService authService, RateLimitingService rateLimiter,
+                          JwtUtil jwtUtil,
+                          RefreshTokenService refreshTokenService) {
         this.authService = authService;
         this.rateLimiter = rateLimiter;
+        this.jwtUtil = jwtUtil;
+        this.refreshTokenService = refreshTokenService;
     }
 
     @PostMapping("/register")
     public ResponseEntity<?> register(
             @Valid @RequestBody RegisterRequest request,
-            HttpServletRequest httpRequest) { // 🚨 Added httpRequest to get the IP
+            HttpServletRequest httpRequest) {
 
         String ip = httpRequest.getRemoteAddr();
+        String userAgent = httpRequest.getHeader("User-Agent");
 
-        // 🚨 1. RATE LIMIT CHECK: Stop bot account creation
+        // 1. RATE LIMIT CHECK
         Bucket bucket = rateLimiter.resolveBucket(ip, RateLimitPlan.AUTH);
         if (!bucket.tryConsume(1)) {
             return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
                     .body(new ApiErrorResponse("429","Too many registration attempts. Please wait 1 minute."));
         }
 
-        // 2. Proceed with registration
+        // 2. Register the user (Returns the saved user)
         authService.register(request);
 
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(new RegisterResponse("User registered successfully"));
+        // ==========================================
+        // 🚨 PATH A: CLEAN AUTO-LOGIN
+        // ==========================================
+
+        // 3. Map the Register credentials to a LoginRequest
+        LoginRequest loginRequest = new LoginRequest(request.username(), request.password());
+
+        // 4. Call your standard login service! (It will no longer crash!)
+        LoginResponse response = authService.login(loginRequest, ip, userAgent);
+
+        // 5. Build the secure HttpOnly cookie
+        ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", response.refreshToken())
+                .httpOnly(true)
+                .secure(false)        // set to true in production!
+                .path("/api/auth")
+                .maxAge(7 * 24 * 60 * 60) // 7 days
+                .sameSite("Lax")
+                .build();
+
+        // 6. Return 201 CREATED with the Access Token and Cookie
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .header(HttpHeaders.SET_COOKIE, refreshCookie.toString())
+                .body(new LoginResponse(response.accessToken(), null));
     }
 
     @PostMapping("/login")
@@ -73,10 +110,10 @@ public class AuthController {
         ResponseCookie refreshCookie = ResponseCookie.from(
                         "refreshToken", response.refreshToken())
                 .httpOnly(true)
-                .secure(true)        // set false only in local dev if needed
+                .secure(false)        // set false only in local dev if needed
                 .path("/api/auth")
                 .maxAge(7 * 24 * 60 * 60) // 7 days
-                .sameSite("Strict")
+                .sameSite("Lax")
                 .build();
 
         // 4. Return Access Token in body, Refresh Token in cookie
@@ -93,7 +130,7 @@ public class AuthController {
 
         String ip = httpRequest.getRemoteAddr();
 
-        Bucket bucket = rateLimiter.resolveBucket(ip, RateLimitPlan.AUTH);
+        Bucket bucket = rateLimiter.resolveBucket(ip, RateLimitPlan.REFRESH);
         if (!bucket.tryConsume(1)) {
             return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
                     .body(new ApiErrorResponse("429","Too many request attempts. Please wait 1 minute."));
@@ -105,10 +142,10 @@ public class AuthController {
         ResponseCookie refreshCookie = ResponseCookie.from(
                         "refreshToken", response.refreshToken())
                 .httpOnly(true)
-                .secure(true)
+                .secure(false)
                 .path("/api/auth")
                 .maxAge(7 * 24 * 60 * 60)
-                .sameSite("Strict")
+                .sameSite("Lax")
                 .build();
 
         return ResponseEntity.ok()
@@ -166,9 +203,20 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
                     .body(new ApiErrorResponse("429","Too many login attempts. Please wait 1 minute."));
         }
-        authService.verify(token);
 
-        return ResponseEntity.ok("Account verified successfully");
+        try {
+            // Attempt verification
+            authService.verify(token);
+            return ResponseEntity.ok(Map.of("message", "Account verified successfully"));
+
+        } catch (ExpiredTokenException ex) {
+            // 🚨 Intercept the expired token and return the email!
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of(
+                            "message", ex.getMessage(),
+                            "email", ex.getEmail()
+                    ));
+        }
     }
 
     @PostMapping("/resend-verification")

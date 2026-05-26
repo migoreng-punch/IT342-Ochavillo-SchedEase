@@ -10,6 +10,8 @@ public enum RateLimitPlan {
     // 🛡️ TIER 1: Highly Sensitive (Logins, Registration)
     AUTH(5, Duration.ofMinutes(1)),
 
+    REFRESH(50, Duration.ofMinutes(1)),
+
     // 🛡️ TIER 2: Expensive Queries (Searching Establishments)
     SEARCH(30, Duration.ofMinutes(1)),
 

@@ -4,6 +4,7 @@ import HeroSection from '../components/HeroSection';
 import FeaturesSection from '../components/FeaturesSection';
 import HowItWorksSection from '../components/HowItWorksSection';
 import CtaSection from '../components/CtaSection';
+import { Footer } from '../layouts/Footer';
 
 export default function LandingPage() {
   return (
@@ -14,6 +15,7 @@ export default function LandingPage() {
         <FeaturesSection />
         <HowItWorksSection />
         <CtaSection />
+        <Footer />
       </main>
     </div>
   );

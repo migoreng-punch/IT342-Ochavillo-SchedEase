@@ -6,6 +6,7 @@ import edu.cit.ochavillo.schedease.auth.repository.RefreshTokenRepository;
 import edu.cit.ochavillo.schedease.util.AppException;
 import jakarta.transaction.Transactional;
 import org.apache.commons.codec.digest.DigestUtils;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -57,6 +58,7 @@ public class RefreshTokenService {
         return DigestUtils.sha256Hex(token);
     }
 
+    @Async
     public void revoke(String rawToken) {
         String hash = hash(rawToken);
 

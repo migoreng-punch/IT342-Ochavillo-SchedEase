@@ -13,4 +13,8 @@ public interface WeeklyAvailabilityRepository
 
     List<WeeklyAvailability>
     findByEstablishmentAndDayOfWeek(Establishment establishment, DayOfWeek dayOfWeek);
+
+    void deleteAllByEstablishment(Establishment establishment);
+
+    List<WeeklyAvailability> findAllByEstablishment(Establishment establishment);
 }

@@ -74,7 +74,7 @@ public class AppointmentControllerTest {
 
         mockClient = new User();
         mockClient.setUsername("clientuser");
-        mockClient.setRole(UserRoles.USER);
+        mockClient.setRole(UserRoles.CLIENT);
 
         mockProvider = new User();
         mockProvider.setUsername("provideruser");

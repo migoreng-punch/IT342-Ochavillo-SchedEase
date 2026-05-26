@@ -36,12 +36,12 @@ public class Appointment {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @ManyToOne(optional = false)
-    @JoinColumn(name = "client_id")
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "client_id", nullable = false)
     private User client;
 
-    @ManyToOne(optional = false)
-    @JoinColumn(name = "establishment_id")
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "establishment_id", nullable = false)
     private Establishment establishment;
 
     @Column(name = "appointment_date", nullable = false)
@@ -55,7 +55,7 @@ public class Appointment {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private AppointmentStatus status;
+    private AppointmentStatus status = AppointmentStatus.PENDING;
 
     @Column(nullable = false)
     private Instant createdAt = Instant.now();

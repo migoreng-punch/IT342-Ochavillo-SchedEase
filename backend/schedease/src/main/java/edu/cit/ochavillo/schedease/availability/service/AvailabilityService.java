@@ -162,4 +162,16 @@ public class AvailabilityService {
 
         return availableSlots;
     }
+
+    @Transactional // REQUIRED for database modifications (Deletes/Updates)
+    public void deleteAllByProviderAndEstablishment(Establishment establishment) {
+        availabilityRepository.deleteAllByEstablishment(establishment);
+    }
+
+    // 🚨 NEW: Retrieve the schedule
+    public List<WeeklyAvailability> getWeeklyAvailability(Establishment establishment) {
+        return availabilityRepository.findAllByEstablishment(establishment);
+    }
+
+
 }

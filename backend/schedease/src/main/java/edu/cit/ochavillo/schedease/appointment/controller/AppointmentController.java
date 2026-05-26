@@ -1,9 +1,6 @@
 package edu.cit.ochavillo.schedease.appointment.controller;
 
-import edu.cit.ochavillo.schedease.appointment.dto.AppointmentDTO;
-import edu.cit.ochavillo.schedease.appointment.dto.AppointmentResponse;
-import edu.cit.ochavillo.schedease.appointment.dto.BookAppointmentRequest;
-import edu.cit.ochavillo.schedease.appointment.dto.RescheduleRequest;
+import edu.cit.ochavillo.schedease.appointment.dto.*;
 import edu.cit.ochavillo.schedease.establishment.entity.Establishment;
 import edu.cit.ochavillo.schedease.user.entity.User;
 import edu.cit.ochavillo.schedease.user.enums.UserRoles;
@@ -16,6 +13,7 @@ import edu.cit.ochavillo.schedease.util.ApiErrorResponse;
 import edu.cit.ochavillo.schedease.util.AppException;
 import io.github.bucket4j.Bucket;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -72,49 +70,25 @@ public class AppointmentController {
                 .body(responseBody);
     }
 
-    // ✅ Confirm Appointment (Provider Only)
-    @PutMapping("/{id}/confirm")
-    public ResponseEntity<AppointmentResponse> confirmAppointment(
+    // 🔄 Update Appointment Status
+    @PutMapping("/{id}/status")
+    public ResponseEntity<AppointmentResponse> updateAppointmentStatus(
             @PathVariable UUID id,
-            @AuthenticationPrincipal User provider) {
+            @Valid @RequestBody UpdateStatusRequest request,
+            @AuthenticationPrincipal User user) {
 
-        if (provider.getRole() != UserRoles.PROVIDER) {
-            throw new AppException("AUTH-005", "Only providers can confirm appointments.");
-        }
+        AppointmentDTO appointmentDTO = appointmentService.updateStatus(id, request.status(), user);
 
-        AppointmentDTO appointmentDTO = appointmentService.confirmAppointment(id, provider);
-
-        AppointmentResponse responseBody = new AppointmentResponse(
-                "Appointment Confirmed",
+        return ResponseEntity.ok(new AppointmentResponse(
+                "Appointment status updated to " + request.status().toUpperCase(),
                 appointmentDTO
-        );
-
-        return ResponseEntity.ok(responseBody);
-    }
-
-    // ✅ Cancel Appointment (Client or Provider)
-    @PutMapping("/{id}/cancel")
-    public ResponseEntity<AppointmentResponse> cancelAppointment(
-            @PathVariable UUID id,
-            @AuthenticationPrincipal User requester) {
-
-        AppointmentDTO appointmentDTO = appointmentService.cancelAppointment(id, requester);
-
-        AppointmentResponse responseBody = new  AppointmentResponse(
-                "Appointment Cancelled.",
-                appointmentDTO
-        );
-
-        return ResponseEntity.ok(responseBody);
+        ));
     }
 
     // 📋 Get My Appointments (Client)
     @GetMapping("/my")
     public ResponseEntity<?> getMyAppointments(
-            @AuthenticationPrincipal(expression = "username") String username) {
-
-        User client = userRepository.findByUsername(username)
-                .orElseThrow(() -> new AppException("USER-001", "User not found"));
+            @AuthenticationPrincipal User client) {
 
         return ResponseEntity.ok(
                 appointmentService.getAppointmentsForClient(client)
@@ -129,7 +103,7 @@ public class AppointmentController {
         User provider = userRepository.findByUsername(username)
                 .orElseThrow(() -> new AppException("USER-001", "User not found"));
 
-        if (!provider.getRole().equals("PROVIDER")) {
+        if (provider.getRole() != UserRoles.PROVIDER) {
             throw new AppException("AUTH-005", "Only providers can access this endpoint.");
         }
 
@@ -145,7 +119,7 @@ public class AppointmentController {
     @PutMapping("/{id}/reschedule")
     public ResponseEntity<?> rescheduleAppointment(
             @PathVariable UUID id,
-            @AuthenticationPrincipal String username,
+            @AuthenticationPrincipal User requester,
             @RequestBody RescheduleRequest request,
             HttpServletRequest httpRequest) {
 
@@ -156,9 +130,6 @@ public class AppointmentController {
             return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
                     .body(new ApiErrorResponse("429","Too many request attempts. Please wait 1 minute."));
         }
-
-        User requester = userRepository.findByUsername(username)
-                .orElseThrow(() -> new AppException("USER-001", "User not found"));
 
         AppointmentDTO appointmentDTO = appointmentService.rescheduleAppointment(
                 id,

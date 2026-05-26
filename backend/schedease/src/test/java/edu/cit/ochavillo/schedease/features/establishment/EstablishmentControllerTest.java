@@ -86,7 +86,7 @@ public class EstablishmentControllerTest {
         // Setup Mock Client User
         mockClient = new User();
         mockClient.setUsername("regular_client");
-        mockClient.setRole(UserRoles.USER);
+        mockClient.setRole(UserRoles.CLIENT);
     }
 
     @Test

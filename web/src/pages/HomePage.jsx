@@ -1,6 +1,4 @@
 import React from 'react';
-import { Header } from '../layouts/Header';
-import { Footer } from '../layouts/Footer';
 import { useEstablishments } from '../establishment/hooks/useEstablishments';
 import { HeroSearch } from '../establishment/components/HeroSearch';
 import { EstablishmentCard } from '../establishment/components/EstablishmentCard';
@@ -18,8 +16,6 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col font-sans text-gray-900">
-      <Header />
-
       <main className="flex-grow">
         <HeroSearch 
           searchQuery={searchQuery} 
@@ -56,8 +52,6 @@ export default function HomePage() {
           )}
         </section>
       </main>
-
-      <Footer />
     </div>
   );
 }

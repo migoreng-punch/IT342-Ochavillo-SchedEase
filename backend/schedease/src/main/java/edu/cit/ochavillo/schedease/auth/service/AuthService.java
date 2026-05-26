@@ -12,6 +12,8 @@ import edu.cit.ochavillo.schedease.security.JwtUtil;
 import edu.cit.ochavillo.schedease.util.EmailService;
 import edu.cit.ochavillo.schedease.auth.service.RefreshTokenService;
 import edu.cit.ochavillo.schedease.util.AppException;
+import edu.cit.ochavillo.schedease.util.ExpiredTokenException;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -45,23 +47,25 @@ public class AuthService {
         this.emailService = emailService;
     }
 
-    public void register(RegisterRequest request) {
+    public User register(RegisterRequest request) {
 
-        if (userRepository.existsByUsername(request.getUsername())) {
+        if (userRepository.existsByUsername(request.email())) {
             throw new AppException("AUTH-004", "Username already exists");
         }
 
-        if (userRepository.existsByEmail(request.getEmail())) {
+        if (userRepository.existsByEmail(request.email())) {
             throw new AppException("AUTH-004", "Email already exists");
         }
 
         User user = new User();
-        user.setUsername(request.getUsername());
-        user.setFirstName(request.getFirstName());
-        user.setLastName(request.getLastName());
-        user.setEmail(request.getEmail());
-        user.setPassword(passwordEncoder.encode(request.getPassword()));
-        user.setRole(UserRoles.USER);
+        user.setUsername(request.username());
+        user.setFirstName(request.firstName());
+        user.setLastName(request.lastName());
+        user.setEmail(request.email());
+        user.setPhoneNumber(request.phoneNumber());
+        user.setAddress(request.address());
+        user.setPassword(passwordEncoder.encode(request.password()));
+        user.setRole(request.role());
         user.setEnabled(false);
 
         userRepository.save(user);
@@ -76,23 +80,25 @@ public class AuthService {
         verificationTokenRepository.save(verificationToken);
 
         emailService.sendVerificationEmail(user.getEmail(), token);
+
+        return user;
     }
 
 
     public LoginResponse login(LoginRequest request, String ip, String userAgent) {
 
-        User user = userRepository.findByUsername(request.getUsername())
+        User user = userRepository.findByUsername(request.username())
                 .orElseThrow(() -> new AppException("AUTH-001", "Invalid username or password"));
 
-        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+        if (!passwordEncoder.matches(request.password(), user.getPassword())) {
             throw new AppException("AUTH-001", "Invalid username or password");
         }
 
-        if (!user.isEnabled()) {
-            throw new AppException("USER-003", "Email not verified. Please verify your email.");
-        }
+//        if (!user.isEnabled()) {
+//            throw new AppException("USER-003", "Email not verified. Please verify your email.");
+//        }
 
-        String accessToken = jwtUtil.generateAccessToken(user.getUsername());
+        String accessToken = jwtUtil.generateAccessToken(user.getUsername(), user.getFirstName(), user.getRole(), user.isEmailVerified());
         String refreshToken = refreshTokenService.create(user, ip, userAgent);
 
         return new LoginResponse(accessToken, refreshToken);
@@ -104,7 +110,7 @@ public class AuthService {
 
         User user = refreshTokenService.validate(newRefreshToken);
 
-        String newAccessToken = jwtUtil.generateAccessToken(user.getUsername());
+        String newAccessToken = jwtUtil.generateAccessToken(user.getUsername(), user.getFirstName(), user.getRole(), user.isEmailVerified());
 
         return new LoginResponse(newAccessToken, newRefreshToken);
     }
@@ -131,8 +137,9 @@ public class AuthService {
                 .findByToken(token)
                 .orElseThrow(() -> new AppException("VERIFY-001", "Invalid verification token"));
 
-        if (vt.getExpiryDate().isBefore(Instant.now())) {
-            throw new AppException("VERIFY-002", "Verification token expired");
+        if (Instant.now().isAfter(vt.getExpiryDate())) {
+            String userEmail = vt.getUser().getEmail();
+            throw new ExpiredTokenException("Verification link has expired.", userEmail);
         }
 
         User user = vt.getUser();
@@ -142,12 +149,13 @@ public class AuthService {
         verificationTokenRepository.delete(vt);
     }
 
+    @Async
     public void resendVerification(String email) {
 
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new AppException("USER-001", "User not found"));
 
-        if (user.isEnabled()) {
+        if (user.isEmailVerified()) {
             throw new AppException("VERIFY-005", "Account already verified");
         }
 

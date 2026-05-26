@@ -1,18 +1,18 @@
 // src/components/InputField.jsx
-export function InputField({ label, name, register, error, type = "text", ...props }) {
+export function InputField({ label, name, register, validation, error, type = "text", ...props }) {
   return (
     <div>
       <label 
-        htmlFor={name} // Links the label to the input via ID
+        htmlFor={name}
         className="block text-sm font-medium text-gray-700 mb-1"
       >
         {label}
       </label>
       <input
-        id={name} // Must match the htmlFor above
+        id={name}
         type={type}
-        className="w-full px-4 py-3 border border-gray-200 rounded-lg ..."
-        {...register(name)} // This spreads the ref, onChange, and name
+        className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+        {...register(name, validation)} // 🚨 Pass the validation rules here!
         {...props}
       />
       {error && (

@@ -34,7 +34,7 @@ public class AvailabilityOverride {
     @Column(name = "is_unavailable",  nullable = false)
     private boolean isUnavailable;
 
-    @ManyToOne(optional = false)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "establishment_id", nullable = false)
     private Establishment establishment;
 }

@@ -32,7 +32,7 @@ export function LoginForm() {
 
     try {
       await login(data); 
-      navigate("/"); // Redirect on success
+      navigate("/homepage"); // Redirect on success
     } catch {
       setServerError("Invalid username or password");
     } finally {

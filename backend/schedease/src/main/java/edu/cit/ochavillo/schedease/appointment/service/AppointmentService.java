@@ -10,6 +10,7 @@ import edu.cit.ochavillo.schedease.appointment.repository.AppointmentRepository;
 import edu.cit.ochavillo.schedease.availability.repository.WeeklyAvailabilityRepository;
 import edu.cit.ochavillo.schedease.availability.service.AvailabilityService;
 import edu.cit.ochavillo.schedease.util.AppException;
+import edu.cit.ochavillo.schedease.util.EmailService;
 import jakarta.transaction.Transactional;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -27,15 +28,18 @@ public class AppointmentService {
     private final AppointmentRepository appointmentRepository;
     private final WeeklyAvailabilityRepository availabilityRepository;
     private final AvailabilityService availabilityService;
+    private final EmailService emailService;
 
     public AppointmentService(
             AppointmentRepository appointmentRepository,
             WeeklyAvailabilityRepository availabilityRepository,
-            AvailabilityService availabilityService) {
+            AvailabilityService availabilityService,
+            EmailService emailService) {
 
         this.appointmentRepository = appointmentRepository;
         this.availabilityRepository = availabilityRepository;
         this.availabilityService = availabilityService;
+        this.emailService = emailService;
     }
 
     @Transactional
@@ -102,6 +106,78 @@ public class AppointmentService {
     }
 
     @Transactional
+    public AppointmentDTO updateStatus(UUID id, String requestedStatus, User requester) {
+
+        // 1. Find the appointment
+        Appointment appointment = appointmentRepository.findById(id)
+                .orElseThrow(() -> new AppException("APT-001", "Appointment not found"));
+
+        // 2. Safely parse the String from React into your Java Enum
+        AppointmentStatus newStatus;
+        try {
+            newStatus = AppointmentStatus.valueOf(requestedStatus.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new AppException("APT-002", "Invalid status requested: " + requestedStatus);
+        }
+
+        // 3. Determine ownership (Who is allowed to touch this?)
+        boolean isCustomer = appointment.getClient().getId().equals(requester.getId());
+        boolean isProvider = appointment.getEstablishment().getOwner().getId().equals(requester.getId());
+
+        // 4. Apply business rules based on the Enum
+        switch (newStatus) {
+
+            case CONFIRMED:
+            case COMPLETED:
+            case NO_SHOW:
+                // Only the exact provider who owns the establishment can do these
+                if (!isProvider) {
+                    throw new AppException("AUTH-006", "You do not have permission to set this status.");
+                }
+                break;
+
+            case CANCELLED:
+                // Both the customer who booked it AND the provider can cancel it
+                if (!isCustomer && !isProvider) {
+                    throw new AppException("AUTH-006", "You do not have permission to cancel this appointment.");
+                }
+                break;
+
+            case PENDING:
+                throw new AppException("APT-003", "Appointments cannot be manually reverted to PENDING.");
+
+            default:
+                throw new AppException("APT-002", "Unhandled status transition: " + newStatus);
+        }
+
+        // 5. Update and Save
+        appointment.setStatus(newStatus);
+        Appointment savedAppointment = appointmentRepository.save(appointment);
+
+        boolean shouldNotifyClient = (newStatus == AppointmentStatus.CONFIRMED) ||
+                (newStatus == AppointmentStatus.CANCELLED && isProvider);
+
+        if (shouldNotifyClient) {
+
+            // Formats the action word nicely (e.g., "CONFIRMED" -> "Confirmed")
+            String actionWord = newStatus.name().substring(0, 1).toUpperCase() +
+                    newStatus.name().substring(1).toLowerCase();
+
+            emailService.sendAppointmentNotification(
+                    savedAppointment.getClient().getEmail(),
+                    savedAppointment.getClient().getFirstName(),
+                    savedAppointment.getEstablishment().getName(),
+                    actionWord,
+                    savedAppointment.getAppointmentDate().toString(),
+                    savedAppointment.getStartTime().toString()
+            );
+        }
+
+        // 6. Return your DTO
+        return convertToDTO(savedAppointment);
+    }
+
+    @Transactional
     public AppointmentDTO confirmAppointment(UUID appointmentId, User provider) {
 
         Appointment appointment = appointmentRepository.findById(appointmentId)
@@ -159,6 +235,10 @@ public class AppointmentService {
 
         Appointment appointment = appointmentRepository.findById(appointmentId)
                 .orElseThrow(() -> new RuntimeException("Appointment not found."));
+
+        if (!requester.isEnabled()) {
+            throw new AppException("USER-003", "Email not verified. Please verify your email.");
+        }
 
         boolean isClient =
                 appointment.getClient().getId().equals(requester.getId());
@@ -290,10 +370,16 @@ public class AppointmentService {
     }
 
     private AppointmentDTO convertToDTO(Appointment appointment) {
+        User customer = appointment.getClient();
+
+        String fullName = customer.getFirstName() + " " + customer.getLastName();
+
         return new AppointmentDTO(
                 appointment.getId(),
                 appointment.getClient().getId(),
+                fullName,
                 appointment.getEstablishment().getId(),
+                appointment.getEstablishment().getName(),
                 appointment.getAppointmentDate(),
                 appointment.getStartTime(),
                 appointment.getEndTime(),

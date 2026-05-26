@@ -29,7 +29,7 @@ class EstablishmentServiceTest {
     void createEstablishment_Fails_IfUserIsClient() {
         // Arrange: Create a standard user (Client)
         User clientUser = new User();
-        clientUser.setRole(UserRoles.USER); // Using the enum from your auth tests
+        clientUser.setRole(UserRoles.CLIENT); // Using the enum from your auth tests
 
         // Arrange: Instantiate the record using the auto-generated constructor
         CreateEstablishmentRequest request = new CreateEstablishmentRequest(

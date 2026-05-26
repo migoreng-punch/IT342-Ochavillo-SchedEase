@@ -73,8 +73,11 @@ public class SecurityConfig {
                 )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/appointments/my").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/appointments/my").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/establishments/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/users/**").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/api/users/**").authenticated()
+                        .requestMatchers(HttpMethod.DELETE, "/api/users/**").authenticated()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(

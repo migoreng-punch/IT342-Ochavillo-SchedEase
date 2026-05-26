@@ -2,6 +2,7 @@ package edu.cit.ochavillo.schedease.security;
 
 import java.util.Date;
 
+import edu.cit.ochavillo.schedease.user.enums.UserRoles;
 import io.jsonwebtoken.Claims;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -18,10 +19,13 @@ public class JwtUtil {
     @Value("${jwt.expiration}")
     private long jwtExpiration;
 
-    public String generateAccessToken(String username) {
+    public String generateAccessToken(String username, String firstname, UserRoles role, boolean isEmailVerified) {
 
         return Jwts.builder()
                 .setSubject(username)
+                .claim("firstname", firstname) // Add custom claim for first name
+                .claim("role", role)           // Add custom claim for role
+                .claim("isEmailVerified", isEmailVerified)
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + jwtExpiration))
                 .signWith(SignatureAlgorithm.HS256, jwtSecret)

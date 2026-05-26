@@ -28,8 +28,8 @@ public class WeeklyAvailability {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @ManyToOne(optional = false)
-    @JoinColumn(name = "establishment_id")
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "establishment_id", nullable = false)
     private Establishment establishment;
 
     @Enumerated(EnumType.STRING)

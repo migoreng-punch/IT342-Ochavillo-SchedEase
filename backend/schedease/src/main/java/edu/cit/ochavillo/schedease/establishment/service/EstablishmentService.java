@@ -117,6 +117,22 @@ public class EstablishmentService {
         return convertToDTO(establishment);
     }
 
+    @Transactional
+    public void deleteMyEstablishment(User provider) {
+        // 1. Find the establishment belonging to this provider
+        Establishment establishment = establishmentRepository.findByOwner(provider)
+                .orElseThrow(() -> new AppException("EST-404", "No establishment found for this provider."));
+
+        // 2. IMPORTANT: If you do not have CascadeType.REMOVE or orphanRemoval = true
+        // set up on your JPA relationships, you must delete child records manually first!
+        //
+        // appointmentRepository.deleteAllByEstablishment(establishment);
+        // scheduleRepository.deleteAllByEstablishment(establishment);
+
+        // 3. Delete the establishment
+        establishmentRepository.delete(establishment);
+    }
+
     private EstablishmentDTO convertToDTO(Establishment entity) {
         return new EstablishmentDTO(
                 entity.getId(),

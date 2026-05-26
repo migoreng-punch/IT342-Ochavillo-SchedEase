@@ -33,6 +33,12 @@ public class User implements UserDetails {
     @Column(nullable = false, unique = true)
     private String email;
 
+    @Column(name = "phone_number")
+    private String phoneNumber;
+
+    @Column(name = "address", columnDefinition = "TEXT") // TEXT is useful if addresses get long
+    private String address;
+
     @Column(name = "first_name", nullable = false)
     private String firstName;
 
@@ -47,7 +53,7 @@ public class User implements UserDetails {
     private UserRoles role;
 
     @Column(nullable = false)
-    private boolean enabled = false;
+    private boolean enabled;
 
     @Column(name = "last_verification_sent_at")
     private Instant lastVerificationSentAt;
@@ -59,5 +65,14 @@ public class User implements UserDetails {
     public Collection<? extends GrantedAuthority> getAuthorities() {
         // Spring Security highly prefers roles to be prefixed with "ROLE_"
         return List.of(new SimpleGrantedAuthority("ROLE_" + this.role.name()));
+    }
+
+    @Override
+    public boolean isEnabled() {
+        return true;
+    }
+
+    public boolean isEmailVerified() {
+        return this.enabled; // returns the actual DB column value
     }
 }
