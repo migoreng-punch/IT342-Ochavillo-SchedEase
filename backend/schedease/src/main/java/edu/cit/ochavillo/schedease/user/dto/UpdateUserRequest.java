@@ -11,5 +11,14 @@ public record UpdateUserRequest(
         String firstName,
 
         @NotBlank(message = "last name cannot be blank")
-        String lastName
+        String lastName,
+
+        @NotBlank(message = "email cannot be blank")
+        String email,
+
+        @NotBlank(message = "phone number cannot be blank")
+        String phoneNumber,
+
+        @NotBlank(message = "address cannot be blank")
+        String address
 ) {}

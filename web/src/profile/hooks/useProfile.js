@@ -8,8 +8,6 @@ export function useProfile() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
-  
-  // 🚨 NEW: Dedicated loading state just for password changes
   const [changingPassword, setChangingPassword] = useState(false); 
 
   // --- 1. Fetch Profile on Load ---
@@ -48,21 +46,31 @@ export function useProfile() {
     fetchProfile();
   }, [fetchProfile]);
 
-  // --- 2. Update Profile ---
+  // --- 2. Update Profile (FIXED) ---
   const updateProfile = async (updatedData) => {
     try {
       setSaving(true);
       setError(null);
 
+      // 🎯 FIX: Read from frontend names (phone/location) and map to backend names (phoneNumber/address)
       const response = await axiosPrivate.put('/api/users/me', {
         firstName: updatedData.firstName,
         lastName: updatedData.lastName,
-        username: updatedData.username
+        username: updatedData.username,
+        email: updatedData.email,
+        phoneNumber: updatedData.phone || '', 
+        address: updatedData.location || '',
       });
 
+      // 🔄 FIX: Remap the server response fields back to frontend key conventions
       setUser(prev => ({
         ...prev,
-        ...response.data
+        firstName: response.data.firstName || '',
+        lastName: response.data.lastName || '',
+        username: response.data.username || '',
+        email: updatedData.email || '',
+        phone: response.data.phoneNumber || '',
+        location: response.data.address || '',
       }));
 
       return true;
@@ -75,23 +83,20 @@ export function useProfile() {
     }
   };
 
-  // --- 3. 🚨 NEW: Change Password ---
+  // --- 3. Change Password ---
   const changePassword = async (passwordData) => {
     try {
       setChangingPassword(true);
       
-      // Hit the new Spring Boot endpoint
       await axiosPrivate.put('/api/users/me/password', {
         currentPassword: passwordData.currentPassword,
         newPassword: passwordData.newPassword,
         confirmPassword: passwordData.confirmPassword
       });
 
-      // Return a success object so the UI can clear the form and show a success message
       return { success: true, message: "Password updated successfully!" };
       
     } catch (err) {
-      // Capture the exact error from Spring Boot (e.g., "Current password is incorrect")
       const backendMessage = err.response?.data?.message || "Failed to update password.";
       return { success: false, message: backendMessage };
       
@@ -100,9 +105,9 @@ export function useProfile() {
     }
   };
 
+  // --- 4. Delete Account ---
   const deleteAccount = async () => {
     try {
-      // Adjust the URL if your controller has a different base path!
       await axiosPrivate.delete('/api/users/me'); 
       return { success: true };
     } catch (err) {
@@ -117,9 +122,9 @@ export function useProfile() {
     loading,
     saving,
     error,
-    changingPassword, // 🚨 Expose the new state
+    changingPassword, 
     updateProfile,
     changePassword,
-    deleteAccount    // 🚨 Expose the new function
+    deleteAccount    
   };
 }

@@ -1,7 +1,8 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react'; // 🚨 1. Added useState
+import { useLocation } from 'react-router-dom'; // 🚨 2. Added useLocation
+import { CheckCircle2 } from 'lucide-react'; // 🚨 3. Added CheckCircle2
 import AppointmentCard from '../appointment/components/AppointmentCard';
 import { useAppointments } from '../appointment/hooks/useAppointments'; 
-// 🚨 1. Import your formatters! (Adjust the path to match your project structure)
 import { formatDateForUI, formatTimeForUI } from '../dashboard/util/formatters'; 
 
 export default function MyAppointmentsPage() {
@@ -13,24 +14,28 @@ export default function MyAppointmentsPage() {
     cancelAppointment 
   } = useAppointments();
 
+  // 🚨 4. Logic to capture the message passed from the Booking Page
+  const location = useLocation();
+  const [successBanner, setSuccessBanner] = useState(location.state?.successMessage || "");
+
   useEffect(() => {
-    fetchMyAppointments().then(rawAppointments => {
-      // 🚨 ADD THIS LINE!
-      console.log("RAW BACKEND DATA:", rawAppointments[0]); 
-    });
+    // Clear the message after it's read so it doesn't persist on page refresh
+    if (location.state?.successMessage) {
+        window.history.replaceState({}, document.title);
+    }
+  }, [location]);
+
+  useEffect(() => {
+    fetchMyAppointments();
   }, [fetchMyAppointments]);
 
-  // 🚨 2. Format the raw backend data to match what the AppointmentCard expects
   const formattedAppointments = useMemo(() => {
     if (!appointments) return [];
     
     return appointments.map(apt => ({
-      ...apt, // Keep the ID, Status, and other original fields
-      // Ensure the name exists, provide a fallback just in case
+      ...apt,
       establishmentName: apt.establishmentName || "Unknown Establishment", 
-      // Format the date into a readable string
       date: formatDateForUI(apt.appointmentDate),
-      // Map the backend's 'startTime' to the frontend's 'time' property
       time: formatTimeForUI(apt.startTime) 
     }));
   }, [appointments]);
@@ -50,6 +55,14 @@ export default function MyAppointmentsPage() {
       <main className="max-w-4xl mx-auto px-4 py-12">
         <h1 className="text-3xl font-extrabold text-gray-900 mb-8">My Appointments</h1>
         
+        {/* 🚨 5. Render the banner if it exists */}
+        {successBanner && (
+          <div className="mb-6 p-4 rounded-xl flex items-start gap-3 text-sm font-medium bg-green-50 text-green-800 border border-green-200 animate-in fade-in slide-in-from-top-2">
+            <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0 mt-0.5" />
+            <p>{successBanner}</p>
+          </div>
+        )}
+        
         {loading && (
           <div className="flex justify-center py-8">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -61,13 +74,12 @@ export default function MyAppointmentsPage() {
         {!loading && !error && (
           <div className="space-y-4">
             {formattedAppointments.length > 0 ? (
-              // 🚨 3. Map over the FORMATTED appointments, not the raw ones
               formattedAppointments.map((apt) => (
                 <AppointmentCard 
                   key={apt.id} 
                   appointment={apt} 
                   onCancel={handleCancel}
-                  onReschedule={(id) => console.log("Reschedule", id)} // Added placeholder so the button works!
+                  onReschedule={(id) => console.log("Reschedule", id)}
                 />
               ))
             ) : (

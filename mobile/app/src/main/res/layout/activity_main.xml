@@ -61,7 +61,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Email / Username"
+                android:text="Username"
                 android:textSize="12sp"
                 android:textStyle="bold"
                 android:textColor="#374151"
@@ -72,7 +72,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="48dp"
                 android:background="@drawable/rounded_edittext"
-                android:hint="you@example.com"
+                android:hint="testuser"
                 android:textColorHint="#9CA3AF"
                 android:paddingHorizontal="12dp"
                 android:textSize="14sp"

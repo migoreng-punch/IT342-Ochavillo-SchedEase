@@ -15,15 +15,24 @@
 
         <Space
             android:layout_width="match_parent"
-            android:layout_height="32dp" />
+            android:layout_height="16dp" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Create an Account"
+            android:text="Create your account"
             android:textSize="22sp"
             android:textStyle="bold"
-            android:textColor="#111827"
+            android:textColor="#111827" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Join SchedEase and manage appointments effortlessly"
+            android:textSize="14sp"
+            android:textColor="#6B7280"
+            android:gravity="center"
+            android:layout_marginTop="8dp"
             android:layout_marginBottom="24dp"/>
 
         <com.google.android.material.card.MaterialCardView
@@ -39,6 +48,36 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
                 android:padding="24dp">
+
+                <com.google.android.material.button.MaterialButtonToggleGroup
+                    android:id="@+id/toggleRole"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:singleSelection="true"
+                    app:selectionRequired="true"
+                    app:checkedButton="@id/btnRoleClient"
+                    android:layout_marginBottom="20dp">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnRoleClient"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="wrap_content"
+                        style="?attr/materialButtonOutlinedStyle"
+                        android:text="Book Appointments"
+                        android:textAllCaps="false"
+                        android:textSize="12sp"/>
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnRoleProvider"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="wrap_content"
+                        style="?attr/materialButtonOutlinedStyle"
+                        android:text="Service Provider"
+                        android:textAllCaps="false"
+                        android:textSize="12sp"/>
+                </com.google.android.material.button.MaterialButtonToggleGroup>
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -58,21 +97,80 @@
                     android:textSize="14sp"
                     android:layout_marginBottom="16dp"/>
 
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:baselineAligned="false"
+                    android:layout_marginBottom="16dp">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:layout_marginEnd="8dp">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="First Name"
+                            android:textSize="12sp"
+                            android:textStyle="bold"
+                            android:textColor="#374151"
+                            android:layout_marginBottom="6dp"/>
+                        <EditText
+                            android:id="@+id/etRegFirstName"
+                            android:layout_width="match_parent"
+                            android:layout_height="48dp"
+                            android:background="@drawable/rounded_edittext"
+                            android:hint="John"
+                            android:inputType="textCapWords"
+                            android:paddingHorizontal="12dp"
+                            android:textSize="14sp"/>
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:layout_marginStart="8dp">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Last Name"
+                            android:textSize="12sp"
+                            android:textStyle="bold"
+                            android:textColor="#374151"
+                            android:layout_marginBottom="6dp"/>
+                        <EditText
+                            android:id="@+id/etRegLastName"
+                            android:layout_width="match_parent"
+                            android:layout_height="48dp"
+                            android:background="@drawable/rounded_edittext"
+                            android:hint="Doe"
+                            android:inputType="textCapWords"
+                            android:paddingHorizontal="12dp"
+                            android:textSize="14sp"/>
+                    </LinearLayout>
+                </LinearLayout>
+
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="First Name"
+                    android:text="Phone Number"
                     android:textSize="12sp"
                     android:textStyle="bold"
                     android:textColor="#374151"
                     android:layout_marginBottom="6dp"/>
                 <EditText
-                    android:id="@+id/etRegFirstName"
+                    android:id="@+id/etRegPhoneNumber"
                     android:layout_width="match_parent"
                     android:layout_height="48dp"
                     android:background="@drawable/rounded_edittext"
-                    android:hint="John"
-                    android:inputType="textCapWords"
+                    android:hint="09123456789"
+                    android:inputType="phone"
+                    android:maxLength="11"
                     android:paddingHorizontal="12dp"
                     android:textSize="14sp"
                     android:layout_marginBottom="16dp"/>
@@ -80,18 +178,18 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Last Name"
+                    android:text="Address"
                     android:textSize="12sp"
                     android:textStyle="bold"
                     android:textColor="#374151"
                     android:layout_marginBottom="6dp"/>
                 <EditText
-                    android:id="@+id/etRegLastName"
+                    android:id="@+id/etRegAddress"
                     android:layout_width="match_parent"
                     android:layout_height="48dp"
                     android:background="@drawable/rounded_edittext"
-                    android:hint="Doe"
-                    android:inputType="textCapWords"
+                    android:hint="Street, City"
+                    android:inputType="textPostalAddress"
                     android:paddingHorizontal="12dp"
                     android:textSize="14sp"
                     android:layout_marginBottom="16dp"/>

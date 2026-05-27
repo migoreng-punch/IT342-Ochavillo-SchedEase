@@ -36,7 +36,7 @@ public class UserController {
         return ResponseEntity.ok(userService.updateUserProfile(user, request));
     }
 
-    @PutMapping("/me/password") // Maps to: PUT /api/users/me/password
+    @PutMapping("/password") // Maps to: PUT /api/users/me/password
     public ResponseEntity<?> changePassword(
             @AuthenticationPrincipal User user,
             @Valid @RequestBody ChangePasswordRequest request) {

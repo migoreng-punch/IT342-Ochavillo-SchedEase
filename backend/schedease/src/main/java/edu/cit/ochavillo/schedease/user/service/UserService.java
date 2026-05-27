@@ -60,7 +60,9 @@ public class UserService {
         authenticatedUser.setUsername(request.username());
         authenticatedUser.setFirstName(request.firstName());
         authenticatedUser.setLastName(request.lastName());
-//        authenticatedUser.setEmail(request.email());
+        authenticatedUser.setEmail(request.email());
+        authenticatedUser.setAddress(request.address());
+        authenticatedUser.setPhoneNumber(request.phoneNumber());
 
         // 4. Save to database
         User updatedUser = userRepository.save(authenticatedUser);

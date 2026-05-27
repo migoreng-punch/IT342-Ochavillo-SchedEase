@@ -16,10 +16,44 @@
         android:usesCleartextTraffic="true"
         tools:targetApi="31">
         <activity
-            android:name=".RegisterActivity"
+            android:name=".SetupEstablishmentActivity"
             android:exported="false" />
         <activity
-            android:name=".activity_register"
+            android:name=".SecuritySettingsActivity"
+            android:exported="false" />
+        <activity
+            android:name=".AccountSettingsActivity"
+            android:exported="false" />
+        <activity
+            android:name=".DateOverridesActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ProviderSettingsActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ProviderScheduleActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ProviderAppointmentsActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ProviderDashboardActivity"
+            android:exported="false" />
+        <activity
+            android:name=".DashboardActivity"
+            android:exported="false" />
+        <activity
+            android:name=".MyAppointmentsActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Schedease" />
+        <activity
+            android:name=".EstablishmentDetailActivity"
+            android:exported="false" />
+        <activity
+            android:name=".HomeActivity"
+            android:exported="false" />
+        <activity
+            android:name=".RegisterActivity"
             android:exported="false" />
         <activity
             android:name=".MainActivity"

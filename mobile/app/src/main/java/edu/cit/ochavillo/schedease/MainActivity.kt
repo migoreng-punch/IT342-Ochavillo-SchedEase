@@ -1,7 +1,6 @@
 package edu.cit.ochavillo.schedease
 
-import android.content.Context
-import android.content.Intent // Make sure this is imported!
+import android.content.Intent
 import android.os.Bundle
 import android.widget.Button
 import android.widget.EditText
@@ -11,6 +10,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import edu.cit.ochavillo.schedease.network.ApiClient
 import edu.cit.ochavillo.schedease.network.AuthRequest
+import edu.cit.ochavillo.schedease.network.SessionManager // 🚨 Import the SessionManager!
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -26,21 +26,18 @@ class MainActivity : AppCompatActivity() {
         val btnLogin = findViewById<Button>(R.id.btnLogin)
         val tvSignUp = findViewById<TextView>(R.id.tvSignUp)
 
-        // 1. LOGIN BUTTON CLICK
         btnLogin.setOnClickListener {
             val username = etUsername.text.toString()
             val password = etPassword.text.toString()
             performLogin(username, password)
         }
 
-        // 2. SIGN UP TEXT CLICK -> OPEN THE NEW SCREEN!
         tvSignUp.setOnClickListener {
             val intent = Intent(this, RegisterActivity::class.java)
             startActivity(intent)
         }
     }
 
-    // 3. PURE LOGIN LOGIC
     private fun performLogin(user: String, pass: String) {
         if (user.isBlank() || pass.isBlank()) {
             Toast.makeText(this, "Please enter credentials", Toast.LENGTH_SHORT).show()
@@ -51,16 +48,28 @@ class MainActivity : AppCompatActivity() {
 
         lifecycleScope.launch(Dispatchers.IO) {
             try {
-                // 🚨 We ONLY call login() here now!
                 val response = ApiClient.apiService.login(request)
 
                 withContext(Dispatchers.Main) {
                     if (response.isSuccessful && response.body() != null) {
-                        val token = response.body()?.token
-                        saveToken(token)
-                        Toast.makeText(this@MainActivity, "Success! Token saved.", Toast.LENGTH_LONG).show()
+                        // 1. Get the token
+                        val token = response.body()!!.token
+
+                        // 2. 🚨 Pass it to SessionManager (This decodes the JWT and saves the user state!)
+                        SessionManager.processAndSetToken(token)
+
+                        Toast.makeText(this@MainActivity, "Login Successful!", Toast.LENGTH_SHORT).show()
+
+                        // 3. 🚨 Navigate to your Home Screen
+                        // (Change 'HomeActivity' to whatever your actual dashboard activity is named)
+                        val intent = Intent(this@MainActivity, HomeActivity::class.java)
+                        startActivity(intent)
+
+                        // 4. Destroy the Login screen so the user can't press the back button into it
+                        finish()
+
                     } else {
-                        Toast.makeText(this@MainActivity, "Error: ${response.code()}", Toast.LENGTH_LONG).show()
+                        Toast.makeText(this@MainActivity, "Invalid credentials", Toast.LENGTH_LONG).show()
                     }
                 }
             } catch (e: Exception) {
@@ -71,12 +80,5 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun saveToken(token: String?) {
-        if (token == null) return
-        val sharedPref = getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
-        with(sharedPref.edit()) {
-            putString("JWT_TOKEN", token)
-            apply()
-        }
-    }
+    // 🚨 You can delete the old saveToken() SharedPreferences function entirely!
 }

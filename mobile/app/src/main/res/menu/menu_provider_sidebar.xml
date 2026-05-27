@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/nav_overview"
+            android:icon="@android:drawable/ic_menu_gallery"
+            android:title="Overview" />
+        <item
+            android:id="@+id/nav_appointments"
+            android:icon="@android:drawable/ic_menu_today"
+            android:title="Appointments" />
+        <item
+            android:id="@+id/nav_schedule"
+            android:icon="@android:drawable/ic_menu_recent_history"
+            android:title="Weekly Schedule" />
+        <item
+            android:id="@+id/nav_overrides"
+            android:icon="@android:drawable/ic_menu_close_clear_cancel"
+            android:title="Date Overrides" />
+        <item
+            android:id="@+id/nav_settings"
+            android:icon="@android:drawable/ic_menu_manage"
+            android:title="Settings" />
+    </group>
+</menu>

@@ -131,9 +131,6 @@ export function useSettings() {
   // --- 4. DELETE ESTABLISHMENT ---
 const deleteEstablishment = async () => {
     // 1. Updated confirmation text to be specific to the establishment
-    const isConfirmed = window.confirm("Are you absolutely sure? This will permanently delete your establishment, schedule, and all appointments.");
-    if (!isConfirmed) return;
-
     try {
       setSaving(true);
       
