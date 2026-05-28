@@ -2,6 +2,7 @@ package edu.cit.ochavillo.schedease.establishment.service;
 
 import edu.cit.ochavillo.schedease.establishment.dto.CreateEstablishmentRequest;
 import edu.cit.ochavillo.schedease.user.enums.UserRoles;
+import edu.cit.ochavillo.schedease.user.repository.UserRepository;
 import edu.cit.ochavillo.schedease.util.CursorResponse;
 import edu.cit.ochavillo.schedease.establishment.dto.EstablishmentDTO;
 import edu.cit.ochavillo.schedease.establishment.dto.UpdateEstablishmentRequest;
@@ -20,9 +21,12 @@ import java.util.List;
 public class EstablishmentService {
 
     private final EstablishmentRepository establishmentRepository;
+    private final UserRepository userRepository;
 
-    public EstablishmentService(EstablishmentRepository establishmentRepository) {
+    public EstablishmentService(EstablishmentRepository establishmentRepository,
+                                UserRepository userRepository) {
         this.establishmentRepository = establishmentRepository;
+        this.userRepository = userRepository;
     }
 
     // Browse establishments
@@ -75,7 +79,10 @@ public class EstablishmentService {
     public EstablishmentDTO createEstablishment(User provider,
                                                            CreateEstablishmentRequest request) {
 
-        if (provider.getRole() != UserRoles.PROVIDER) {
+        User managedUser = userRepository.findById(provider.getId())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (managedUser.getRole() != UserRoles.PROVIDER) {
             throw new SecurityException("Only providers can create establishments.");
         }
 
@@ -85,7 +92,7 @@ public class EstablishmentService {
         establishment.setAddress(request.address());
         establishment.setContactEmail(request.contactEmail());
         establishment.setSlotDurationMinutes(request.slotDurationMinutes());
-        establishment.setOwner(provider);
+        establishment.setOwner(managedUser);
         establishmentRepository.save(establishment);
 
         return convertToDTO(establishment);

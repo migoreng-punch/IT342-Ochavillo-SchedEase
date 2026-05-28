@@ -30,7 +30,6 @@ export function RegisterForm() {
   const [role, setRole] = useState("CLIENT");
   const navigate = useNavigate();
 
-  // 1. Pull the new autoLogin function from context
   const { autoLogin } = useAuth();
 
   const {

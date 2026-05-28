@@ -54,11 +54,13 @@ public class EmailService {
             Context context = new Context();
             context.setVariable("clientName", clientName);
             context.setVariable("establishmentName", establishmentName);
-            context.setVariable("action", statusOrAction); // e.g., "Confirmed", "Cancelled", "Rescheduled"
+
+            // 🚨 CHANGE THIS LINE: "action" -> "actionWord"
+            context.setVariable("actionWord", statusOrAction);
+
             context.setVariable("date", date);
             context.setVariable("time", time);
 
-            // You will need to create a new HTML file named 'appointment-notification.html' in your templates folder
             String htmlBody = templateEngine.process("appointment-notification", context);
 
             MimeMessage message = mailSender.createMimeMessage();

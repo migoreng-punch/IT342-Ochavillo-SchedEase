@@ -1,14 +1,21 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useAxiosPrivate } from '../../api/interceptor'; // 🚨 1. Import your private axios for authenticated requests
 
 export function useEstablishments() {
+  const axiosPrivate = useAxiosPrivate(); // 🚨 2. Initialize it
+  
   const [establishments, setEstablishments] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [nextCursor, setNextCursor] = useState(null);
   const [hasMore, setHasMore] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
+  
+  // 🚨 3. Add an error state so your component's alert box works
+  const [error, setError] = useState(null); 
 
+  // --- Fetching Logic (Unchanged) ---
   useEffect(() => {
     const fetchEstablishments = async () => {
       try {
@@ -52,6 +59,26 @@ export function useEstablishments() {
     }
   };
 
+  // 🚨 4. ADD THE MISSING CREATE FUNCTION
+  const createEstablishment = async (payload) => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Use axiosPrivate so the backend knows which Provider is creating this
+      await axiosPrivate.post('/api/establishments', payload);
+      
+      return true; // Success!
+    } catch (err) {
+      // Catch backend errors (e.g. "Name already taken") and pass them to the UI
+      const backendMessage = err.response?.data?.message || "Failed to setup establishment. Please try again.";
+      setError(backendMessage);
+      return false; // Failed
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return {
     establishments,
     loading,
@@ -59,6 +86,8 @@ export function useEstablishments() {
     hasMore,
     searchQuery,
     setSearchQuery,
-    handleLoadMore
+    handleLoadMore,
+    error, // 🚨 5. Export the error
+    createEstablishment // 🚨 6. Export the new function
   };
 }

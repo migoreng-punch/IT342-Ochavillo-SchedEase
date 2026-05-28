@@ -23,8 +23,8 @@ public class JwtUtil {
 
         return Jwts.builder()
                 .setSubject(username)
-                .claim("firstname", firstname) // Add custom claim for first name
-                .claim("role", role)           // Add custom claim for role
+                .claim("firstname", firstname)
+                .claim("role", role)
                 .claim("isEmailVerified", isEmailVerified)
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + jwtExpiration))

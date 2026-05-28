@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+</head>
+<body style="background-color: #f9fafb; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 0;">
+<table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+    <tr>
+        <td align="center" style="padding: 40px 0;">
+            <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="600" style="background-color: #ffffff; border-radius: 12px; border: 1px solid #e5e7eb; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+
+                <tr>
+                    <td style="padding: 40px 40px 20px 40px; text-align: left;">
+                        <h1 style="color: #111827; font-size: 24px; font-weight: 700; margin: 0; letter-spacing: -0.025em;">SchedEase</h1>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td style="padding: 20px 40px 10px 40px;">
+                        <h2 style="color: #374151; font-size: 18px; font-weight: 600; margin-bottom: 16px;">
+                            Appointment <span th:text="${actionWord}">Status</span>
+                        </h2>
+
+                        <p style="color: #6b7280; font-size: 16px; line-height: 24px; margin-bottom: 24px;">
+                            Hi <span th:text="${clientName}">Client</span>,<br><br>
+                            Your appointment with <strong style="color: #111827;" th:text="${establishmentName}">Establishment</strong> has been <strong style="color: #2563eb;" th:text="${actionWord}">Confirmed</strong>.
+                        </p>
+
+                        <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb; margin-bottom: 32px;">
+                            <tr>
+                                <td style="padding: 16px 20px;">
+                                    <p style="margin: 0 0 8px 0; color: #6b7280; font-size: 15px;">
+                                        <strong>Date:</strong> <span style="color: #111827;" th:text="${date}">YYYY-MM-DD</span>
+                                    </p>
+                                    <p style="margin: 0; color: #6b7280; font-size: 15px;">
+                                        <strong>Time:</strong> <span style="color: #111827;" th:text="${time}">00:00</span>
+                                    </p>
+                                </td>
+                            </tr>
+                        </table>
+
+                    </td>
+                </tr>
+
+                <tr>
+                    <td style="padding: 0 40px 40px 40px;">
+                        <p style="color: #9ca3af; font-size: 14px; line-height: 20px; margin: 0;">
+                            If you need to make any changes or have questions, please log in to your SchedEase account or contact the establishment directly.
+                        </p>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td style="background-color: #f3f4f6; padding: 20px 40px; text-align: center;">
+                        <p style="color: #9ca3af; font-size: 12px; margin: 0;">
+                            © 2026 SchedEase Inc. | 123 Scheduling Way, Tech City
+                        </p>
+                    </td>
+                </tr>
+
+            </table>
+        </td>
+    </tr>
+</table>
+</body>
+</html>
